@@ -2,9 +2,13 @@
   "name": "git-canvas",
   "version": "0.1.0",
   "private": true,
-  "description": "GitCanvas - Paint your Git history",
+  "description": "🎨 GitCanvas - Paint your Git history",
   "author": "Sottiki",
   "license": "MIT",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=10.0.0"
+  },
   "workspaces": [
     "packages/*"
   ],
