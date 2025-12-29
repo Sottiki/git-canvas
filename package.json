@@ -1,0 +1,16 @@
+{
+  "name": "git-canvas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GitCanvas - Paint your Git history",
+  "author": "Sottiki",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:frontend": "pnpm --filter @git-canvas/frontend dev",
+    "dev:backend": "pnpm --filter @git-canvas/backend dev",
+    "build": "pnpm --filter @git-canvas/* build"
+  }
+}
