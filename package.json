@@ -15,6 +15,12 @@
   "scripts": {
     "dev:frontend": "pnpm --filter @git-canvas/frontend dev",
     "dev:backend": "pnpm --filter @git-canvas/backend dev",
-    "build": "pnpm --filter @git-canvas/* build"
+    "build": "pnpm --filter @git-canvas/* build",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.10"
   }
 }
