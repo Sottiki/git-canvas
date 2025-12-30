@@ -1,4 +1,4 @@
 /**
  * 型定義のエクスポート
  */
-export type { HealthStatus, HealthResponse } from './api.js';
+export type { HealthResponse, HealthStatus } from './api.js';
