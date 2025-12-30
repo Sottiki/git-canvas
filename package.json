@@ -22,7 +22,13 @@
     "type-check": "pnpm --filter @git-canvas/* exec tsc --noEmit",
     "type-check:backend": "pnpm --filter @git-canvas/backend exec tsc --noEmit",
     "type-check:frontend": "pnpm --filter @git-canvas/frontend exec tsc --noEmit",
-    "type-check:shared": "pnpm --filter @git-canvas/shared exec tsc --noEmit"
+    "type-check:shared": "pnpm --filter @git-canvas/shared exec tsc --noEmit",
+    "test": "pnpm --filter @git-canvas/* test",
+    "test:backend": "pnpm --filter @git-canvas/backend test",
+    "test:frontend": "pnpm --filter @git-canvas/frontend test",
+    "test:ui:backend": "pnpm --filter @git-canvas/backend test:ui",
+    "test:ui:frontend": "pnpm --filter @git-canvas/frontend test:ui",
+    "test:coverage": "pnpm --filter @git-canvas/* test:coverage"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.10"
