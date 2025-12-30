@@ -1,8 +1,7 @@
-import type { JSX } from 'react';
 import { HealthCheck } from './components/HealthCheck';
 import './App.css';
 
-const App = (): JSX.Element => {
+const App = () => {
   return (
     <div className="App">
       <h1>🎨 GitCanvas</h1>

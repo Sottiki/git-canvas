@@ -1,7 +1,7 @@
 import type { HealthResponse } from '@git-canvas/shared';
-import { type JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-export const HealthCheck = (): JSX.Element => {
+export const HealthCheck = () => {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

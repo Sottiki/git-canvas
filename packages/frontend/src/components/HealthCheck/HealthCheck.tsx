@@ -5,7 +5,7 @@ import { HealthCheckError } from './HealthCheckError';
 import { HealthCheckLoading } from './HealthCheckLoading';
 import { HealthCheckSuccess } from './HealthCheckSuccess';
 
-export const HealthCheck = (): JSX.Element => {
+export const HealthCheck = () => {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

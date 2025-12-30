@@ -2,7 +2,7 @@ interface HealthCheckErrorProps {
   error: string;
 }
 
-export const HealthCheckError = ({ error }: HealthCheckErrorProps): JSX.Element => {
+export const HealthCheckError = ({ error }: HealthCheckErrorProps) => {
   return (
     <div style={{ padding: '20px', border: '2px solid #ef4444', borderRadius: '8px' }}>
       <h2>❌ Backend Error</h2>
