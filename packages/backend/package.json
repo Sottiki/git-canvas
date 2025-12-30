@@ -21,6 +21,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^24.10.4",
+    "@vitest/coverage-v8": "^4.0.16",
     "@vitest/ui": "^4.0.16",
     "nodemon": "^3.1.11",
     "tsx": "^4.21.0",

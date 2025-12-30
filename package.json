@@ -27,6 +27,7 @@
     "test:backend": "pnpm --filter @git-canvas/backend test",
     "test:frontend": "pnpm --filter @git-canvas/frontend test",
     "test:ui": "pnpm --filter @git-canvas/* test:ui",
+    "test:coverage": "pnpm --filter @git-canvas/* test:coverage"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.10"
