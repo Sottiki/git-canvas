@@ -1,10 +1,5 @@
+import type { HealthResponse } from '@git-canvas/shared';
 import { type JSX, useEffect, useState } from 'react';
-
-interface HealthResponse {
-  status: 'ok' | 'error';
-  timestamp: string;
-  uptime: number;
-}
 
 export const HealthCheck = (): JSX.Element => {
   const [health, setHealth] = useState<HealthResponse | null>(null);

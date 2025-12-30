@@ -9,6 +9,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@git-canvas/shared": "workspace:*",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1"

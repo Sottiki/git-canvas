@@ -14,6 +14,9 @@ importers:
 
   packages/backend:
     dependencies:
+      '@git-canvas/shared':
+        specifier: workspace:*
+        version: link:../shared
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -45,6 +48,9 @@ importers:
 
   packages/frontend:
     dependencies:
+      '@git-canvas/shared':
+        specifier: workspace:*
+        version: link:../shared
       react:
         specifier: ^19.2.0
         version: 19.2.3
