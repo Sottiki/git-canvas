@@ -1,5 +1,5 @@
+import type { HealthResponse } from '@git-canvas/shared';
 import { type Request, type Response, Router } from 'express';
-import type { HealthResponse } from '../types/health.js';
 
 export const healthRouter = Router();
 
