@@ -8,7 +8,10 @@
     "skipLibCheck": true,
     "declaration": true,
     "declarationMap": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "paths": {
+      "@git-canvas/shared": ["../shared/src/index.ts"]
+    }
   },
   "include": ["src"]
 }
