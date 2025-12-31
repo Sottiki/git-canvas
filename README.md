@@ -1,4 +1,5 @@
 # 🎨 GitCanvas
+[![CI](https://github.com/Sottiki/git-canvas/actions/workflows/ci.yml/badge.svg)](https://github.com/Sottiki/git-canvas/actions/workflows/ci.yml)
 
 Paint your Git history - Visualize GitHub branches and commits beautifully
 
