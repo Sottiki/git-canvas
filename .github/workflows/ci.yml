@@ -82,10 +82,10 @@ jobs:
       - name: Run coverage
         run: pnpm test:coverage
 
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./packages/backend/coverage/coverage-final.json,./packages/frontend/coverage/coverage-final.json
-          fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    #   - name: Upload coverage reports
+    #     uses: codecov/codecov-action@v4
+    #     with:
+    #       files: ./packages/backend/coverage/coverage-final.json,./packages/frontend/coverage/coverage-final.json
+    #       fail_ci_if_error: false
+    #     env:
+    #       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
