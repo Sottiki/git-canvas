@@ -1,7 +1,7 @@
 import type { Server } from 'node:http';
 import type { HealthResponse } from '@git-canvas/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createApp } from '../app.js';
+import { createApp } from '../../app.js';
 
 describe('Health Check API', () => {
   let server: Server;
