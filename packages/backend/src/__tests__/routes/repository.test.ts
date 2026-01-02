@@ -1,9 +1,9 @@
 import type { CanvasBranch, CanvasCommit, CanvasRepository } from '@git-canvas/shared/types';
-import type { Express } from 'express';
+import cors from 'cors';
+import express, { type Express } from 'express';
 import request from 'supertest';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp } from '../../app.js';
-import { resetGitHubService, setGitHubService } from '../../routes/repository.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createRepositoryRouter } from '../../routes/repository.js';
 import type { GitHubService } from '../../services/githubService.js';
 
 describe('Repository Routes', () => {
@@ -15,18 +15,21 @@ describe('Repository Routes', () => {
   };
 
   beforeEach(() => {
+    // モックサービスの作成
     mockGitHubService = {
       getCommits: vi.fn(),
       getBranches: vi.fn(),
       getRepository: vi.fn(),
     };
 
-    setGitHubService(mockGitHubService as unknown as GitHubService);
-    app = createApp();
-  });
+    // モックサービスを注入してルーターを作成
+    const router = createRepositoryRouter(mockGitHubService as unknown as GitHubService);
 
-  afterEach(() => {
-    resetGitHubService();
+    // テスト用アプリケーション作成
+    app = express();
+    app.use(cors());
+    app.use(express.json());
+    app.use('/api/repositories', router);
   });
 
   describe('GET /api/repositories/:owner/:repo/commits', () => {
@@ -60,7 +63,7 @@ describe('Repository Routes', () => {
           shortId: 'abc123d',
           message: 'Test commit',
           fullMessage: 'Test commit\n\nDetailed description',
-          date: '2025-01-01T12:00:00.000Z', // 文字列
+          date: '2025-01-01T12:00:00.000Z',
           author: {
             name: 'Test User',
             email: 'test@example.com',
@@ -187,7 +190,7 @@ describe('Repository Routes', () => {
             shortId: 'abc123d',
             message: 'Test commit',
             fullMessage: 'Test commit',
-            date: '2025-01-01T12:00:00.000Z', // 文字列
+            date: '2025-01-01T12:00:00.000Z',
             author: {
               name: 'Test User',
               email: 'test@example.com',
