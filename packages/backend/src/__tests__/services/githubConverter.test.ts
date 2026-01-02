@@ -45,7 +45,7 @@ describe('githubConverter', () => {
         shortId: 'abc123d',
         message: 'Fix: bug fix',
         fullMessage: 'Fix: bug fix\n\nDetailed description here',
-        date: new Date('2025-01-01T12:00:00Z'),
+        date: '2025-01-01T12:00:00Z',
         author: {
           name: 'Test User',
           email: 'test@example.com',

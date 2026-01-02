@@ -40,7 +40,7 @@ describe('Repository Routes', () => {
           shortId: 'abc123d',
           message: 'Test commit',
           fullMessage: 'Test commit\n\nDetailed description',
-          date: new Date('2025-01-01T12:00:00Z'),
+          date: '2025-01-01T12:00:00Z',
           author: {
             name: 'Test User',
             email: 'test@example.com',
@@ -63,7 +63,7 @@ describe('Repository Routes', () => {
           shortId: 'abc123d',
           message: 'Test commit',
           fullMessage: 'Test commit\n\nDetailed description',
-          date: '2025-01-01T12:00:00.000Z',
+          date: '2025-01-01T12:00:00Z',
           author: {
             name: 'Test User',
             email: 'test@example.com',
@@ -157,7 +157,7 @@ describe('Repository Routes', () => {
             shortId: 'abc123d',
             message: 'Test commit',
             fullMessage: 'Test commit',
-            date: new Date('2025-01-01T12:00:00Z'),
+            date: '2025-01-01T12:00:00Z',
             author: {
               name: 'Test User',
               email: 'test@example.com',
@@ -190,7 +190,7 @@ describe('Repository Routes', () => {
             shortId: 'abc123d',
             message: 'Test commit',
             fullMessage: 'Test commit',
-            date: '2025-01-01T12:00:00.000Z',
+            date: '2025-01-01T12:00:00Z',
             author: {
               name: 'Test User',
               email: 'test@example.com',

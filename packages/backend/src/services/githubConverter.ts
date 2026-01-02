@@ -42,7 +42,7 @@ export function convertToCanvasCommit(
     shortId,
     message,
     fullMessage,
-    date: new Date(commit.author.date),
+    date: commit.author.date,
     author: canvasAuthor,
     parentIds,
     branchNames,

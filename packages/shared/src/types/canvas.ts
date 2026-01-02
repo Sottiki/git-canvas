@@ -29,8 +29,8 @@ export interface CanvasCommit {
   /** 完全なコミットメッセージ */
   fullMessage: string;
 
-  /** コミット作成日時 */
-  date: Date;
+  /** コミット作成日時（ISO 8601形式の文字列） */
+  date: string;
 
   /** コミット作成者情報 */
   author: CanvasAuthor;
