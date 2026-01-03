@@ -55,6 +55,21 @@ describe('useRepository', () => {
     expect(result.current.error).toEqual(mockError);
   });
 
+  it('Error型でないエラーが発生した場合、Unknown errorとして扱う', async () => {
+    // Error 型でない例外（文字列など）
+    vi.spyOn(repositoryApi, 'fetchRepository').mockRejectedValueOnce('String error');
+
+    const { result } = renderHook(() => useRepository('Sottiki', 'git-canvas'));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.repository).toBeNull();
+    expect(result.current.error).toEqual(new Error('Unknown error'));
+    expect(result.current.error?.message).toBe('Unknown error');
+  });
+
   it('refetchを呼ぶとデータを再取得する', async () => {
     const mockRepository: CanvasRepository = {
       owner: 'Sottiki',
@@ -67,30 +82,24 @@ describe('useRepository', () => {
 
     const { result } = renderHook(() => useRepository('Sottiki', 'git-canvas'));
 
-    // 初回取得完了
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    const initialCallCount = fetchSpy.mock.calls.length;
-    expect(initialCallCount).toBe(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
 
-    // refetch を実行して、loading が true になるのを待つ
     act(() => {
       result.current.refetch();
     });
 
-    // loading が true になったことを確認
     await waitFor(() => {
       expect(result.current.loading).toBe(true);
     });
 
-    // loading が false になる（完了）のを待つ
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    // 呼び出し回数を確認
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
@@ -125,12 +134,10 @@ describe('useRepository', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(result.current.repository).toEqual(mockRepository1);
 
-    // rerender を act で包む
     act(() => {
       rerender({ owner: 'Sottiki', repo: 'other-repo' });
     });
 
-    // 呼び出し回数が増えるのを待つ
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledTimes(2);
     });

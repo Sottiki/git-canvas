@@ -33,6 +33,8 @@ export const HealthCheck = () => {
 
   if (loading) return <HealthCheckLoading />;
   if (error) return <HealthCheckError error={error} />;
-  if (!health) return <HealthCheckEmpty />;
+  if (!health || !health.status || !health.timestamp || typeof health.uptime !== 'number') {
+    return <HealthCheckEmpty />;
+  }
   return <HealthCheckSuccess health={health} />;
 };
