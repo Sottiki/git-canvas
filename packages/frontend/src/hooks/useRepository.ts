@@ -44,7 +44,7 @@ export const useRepository = (owner: string, repo: string): UseRepositoryReturn 
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]); 
+  }, [fetchData]);
 
   return {
     repository,
