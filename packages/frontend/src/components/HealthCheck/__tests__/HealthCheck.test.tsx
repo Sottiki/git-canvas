@@ -74,4 +74,22 @@ describe('HealthCheck', () => {
 
     expect(screen.getByText(/HTTP error! status: 500/i)).toBeInTheDocument();
   });
+
+  it('should show No Data when API returns empty', async () => {
+    // fetch をモック (成功だけどデータなし)
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            status: 'ok',
+          }),
+      } as Response)
+    );
+
+    render(<HealthCheck />);
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('❓ No Data');
+    });
+  });
 });

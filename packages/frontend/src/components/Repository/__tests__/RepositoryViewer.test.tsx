@@ -1,0 +1,210 @@
+import type { CanvasRepository } from '@git-canvas/shared/types';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as useRepositoryHook from '../../../hooks/useRepository';
+import { RepositoryViewer } from '../RepositoryViewer';
+
+// useRepository フックをモック化
+vi.mock('../../../hooks/useRepository');
+
+describe('RepositoryViewer', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('ローディング中は "Loading..." を表示する', () => {
+    // Arrange
+    vi.spyOn(useRepositoryHook, 'useRepository').mockReturnValue({
+      repository: null,
+      loading: true,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    // Act
+    render(<RepositoryViewer owner="Sottiki" repo="git-canvas" />);
+
+    // Assert
+    expect(screen.getByText('Loading repository data...')).toBeInTheDocument();
+  });
+
+  it('エラー時はエラーメッセージと Retry ボタンを表示する', () => {
+    // Arrange
+    const mockRefetch = vi.fn();
+    vi.spyOn(useRepositoryHook, 'useRepository').mockReturnValue({
+      repository: null,
+      loading: false,
+      error: new Error('Failed to fetch'),
+      refetch: mockRefetch,
+    });
+
+    // Act
+    render(<RepositoryViewer owner="Sottiki" repo="git-canvas" />);
+
+    // Assert
+    expect(screen.getByText('Error loading repository')).toBeInTheDocument();
+    expect(screen.getByText('Failed to fetch')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+  });
+
+  it('Retry ボタンをクリックすると refetch が呼ばれる', async () => {
+    // Arrange
+    const mockRefetch = vi.fn();
+    vi.spyOn(useRepositoryHook, 'useRepository').mockReturnValue({
+      repository: null,
+      loading: false,
+      error: new Error('Failed to fetch'),
+      refetch: mockRefetch,
+    });
+
+    // Act
+    render(<RepositoryViewer owner="Sottiki" repo="git-canvas" />);
+
+    const retryButton = screen.getByRole('button', { name: 'Retry' });
+    retryButton.click();
+
+    // Assert
+    expect(mockRefetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('データがない場合は "No repository data" を表示する', () => {
+    // Arrange
+    vi.spyOn(useRepositoryHook, 'useRepository').mockReturnValue({
+      repository: null,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    // Act
+    render(<RepositoryViewer owner="Sottiki" repo="git-canvas" />);
+
+    // Assert
+    expect(screen.getByText('No repository data available')).toBeInTheDocument();
+  });
+
+  it('リポジトリ情報を正しく表示する', () => {
+    // Arrange
+    const mockRepository: CanvasRepository = {
+      owner: 'Sottiki',
+      name: 'git-canvas',
+      commits: [
+        {
+          id: 'abc123',
+          shortId: 'abc123d',
+          message: 'Test commit',
+          fullMessage: 'Test commit\n\nDetails',
+          date: '2025-01-01T12:00:00Z',
+          author: {
+            name: 'Test User',
+            email: 'test@example.com',
+            avatarUrl: 'https://example.com/avatar.jpg',
+          },
+          parentIds: [],
+          branchNames: [],
+          url: 'https://github.com/Sottiki/git-canvas/commit/abc123',
+        },
+      ],
+      branches: [
+        {
+          name: 'main',
+          latestCommitId: 'abc123',
+          isProtected: true,
+        },
+        {
+          name: 'develop',
+          latestCommitId: 'def456',
+          isProtected: false,
+        },
+      ],
+    };
+
+    vi.spyOn(useRepositoryHook, 'useRepository').mockReturnValue({
+      repository: mockRepository,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    // Act
+    render(<RepositoryViewer owner="Sottiki" repo="git-canvas" />);
+
+    // Assert - リポジトリ名
+    expect(screen.getByText('Sottiki / git-canvas')).toBeInTheDocument();
+
+    // Assert - ブランチ数
+    expect(screen.getByText('Branches (2)')).toBeInTheDocument();
+    expect(screen.getByText(/main/)).toBeInTheDocument();
+    expect(screen.getByText(/develop/)).toBeInTheDocument();
+
+    // Assert - コミット数
+    expect(screen.getByText('Commits (1)')).toBeInTheDocument();
+    expect(screen.getByText('Test commit')).toBeInTheDocument();
+    expect(screen.getByText(/Test User/)).toBeInTheDocument();
+    expect(screen.getByText(/abc123d/)).toBeInTheDocument();
+
+    // Assert - アバター画像
+    const avatar = screen.getByAltText('Test User');
+    expect(avatar).toBeInTheDocument();
+    expect(avatar).toHaveAttribute('src', 'https://example.com/avatar.jpg');
+
+    // Assert - Refresh ボタン
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
+  });
+
+  it('保護されたブランチには 🔒 アイコンが表示される', () => {
+    // Arrange
+    const mockRepository: CanvasRepository = {
+      owner: 'Sottiki',
+      name: 'git-canvas',
+      commits: [],
+      branches: [
+        {
+          name: 'main',
+          latestCommitId: 'abc123',
+          isProtected: true,
+        },
+      ],
+    };
+
+    vi.spyOn(useRepositoryHook, 'useRepository').mockReturnValue({
+      repository: mockRepository,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    // Act
+    render(<RepositoryViewer owner="Sottiki" repo="git-canvas" />);
+
+    // Assert
+    expect(screen.getByText(/main.*🔒/)).toBeInTheDocument();
+  });
+
+  it('Refresh ボタンをクリックすると refetch が呼ばれる', () => {
+    // Arrange
+    const mockRefetch = vi.fn();
+    const mockRepository: CanvasRepository = {
+      owner: 'Sottiki',
+      name: 'git-canvas',
+      commits: [],
+      branches: [],
+    };
+
+    vi.spyOn(useRepositoryHook, 'useRepository').mockReturnValue({
+      repository: mockRepository,
+      loading: false,
+      error: null,
+      refetch: mockRefetch,
+    });
+
+    // Act
+    render(<RepositoryViewer owner="Sottiki" repo="git-canvas" />);
+
+    const refreshButton = screen.getByRole('button', { name: 'Refresh' });
+    refreshButton.click();
+
+    // Assert
+    expect(mockRefetch).toHaveBeenCalledTimes(1);
+  });
+});
