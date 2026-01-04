@@ -5,9 +5,7 @@ import styles from './RepositoryViewer.module.css';
  * RepositoryViewer のプロパティ
  */
 interface RepositoryViewerProps {
-  /** リポジトリオーナー */
   owner: string;
-  /** リポジトリ名 */
   repo: string;
 }
 
@@ -17,7 +15,6 @@ interface RepositoryViewerProps {
 export const RepositoryViewer = ({ owner, repo }: RepositoryViewerProps) => {
   const { repository, loading, error, refetch } = useRepository(owner, repo);
 
-  // ローディング表示
   if (loading) {
     return (
       <div className={styles.container}>
@@ -62,7 +59,7 @@ export const RepositoryViewer = ({ owner, repo }: RepositoryViewerProps) => {
         <h2 className={styles.title}>
           {repository.owner} / {repository.name}
         </h2>
-        <button type="button" className={styles.refreshButton} onClick={refetch}>
+        <button type="button" className={styles.refreshButton} onClick={refetch} disabled={loading}>
           Refresh
         </button>
       </div>

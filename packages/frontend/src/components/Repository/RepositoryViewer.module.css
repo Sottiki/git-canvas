@@ -260,6 +260,12 @@
   animation: spin 1s linear infinite;
 }
 
+.loading p {
+  margin-top: 80px;
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
