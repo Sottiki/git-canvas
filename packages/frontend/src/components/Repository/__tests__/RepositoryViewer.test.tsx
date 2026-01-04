@@ -133,12 +133,14 @@ describe('RepositoryViewer', () => {
     expect(screen.getByText('Sottiki / git-canvas')).toBeInTheDocument();
 
     // Assert - ブランチ数
-    expect(screen.getByText('Branches (2)')).toBeInTheDocument();
+    expect(screen.getByText('Branches')).toBeInTheDocument();
+    expect(screen.getByText('(2)')).toBeInTheDocument();
     expect(screen.getByText(/main/)).toBeInTheDocument();
     expect(screen.getByText(/develop/)).toBeInTheDocument();
 
     // Assert - コミット数
-    expect(screen.getByText('Commits (1)')).toBeInTheDocument();
+    expect(screen.getByText('Branches')).toBeInTheDocument();
+    expect(screen.getByText('(1)')).toBeInTheDocument();
     expect(screen.getByText('Test commit')).toBeInTheDocument();
     expect(screen.getByText(/Test User/)).toBeInTheDocument();
     expect(screen.getByText(/abc123d/)).toBeInTheDocument();
@@ -178,7 +180,8 @@ describe('RepositoryViewer', () => {
     render(<RepositoryViewer owner="Sottiki" repo="git-canvas" />);
 
     // Assert
-    expect(screen.getByText(/main.*🔒/)).toBeInTheDocument();
+    expect(screen.getByText('main')).toBeInTheDocument();
+    expect(screen.getByText('🔒')).toBeInTheDocument();
   });
 
   it('Refresh ボタンをクリックすると refetch が呼ばれる', () => {
