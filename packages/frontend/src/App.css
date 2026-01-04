@@ -1,42 +1,52 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+.App {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--gradient-subtle);
+}
+
+/* ヘッダー */
+.App h1 {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 3rem;
+  font-weight: 800;
   text-align: center;
+  padding: var(--spacing-xl) 0 var(--spacing-sm) 0; /* 下のpaddingを小さく */
+  margin: 0;
+  letter-spacing: -0.02em;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* サブタイトル追加 */
+.App-subtitle {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  margin: 0;
+  padding-bottom: var(--spacing-xl);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+/* コンテナ */
+.App > div {
+  max-width: var(--max-width-container);
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+  .App h1 {
+    font-size: 2rem;
+    padding: var(--spacing-lg) 0 var(--spacing-xs) 0;
   }
-  to {
-    transform: rotate(360deg);
+
+  .App-subtitle {
+    font-size: 0.875rem;
+    padding-bottom: var(--spacing-lg);
   }
-}
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+  .App > div {
+    padding: 0 var(--spacing-md);
   }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
