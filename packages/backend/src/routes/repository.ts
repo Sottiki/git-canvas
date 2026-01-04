@@ -122,5 +122,3 @@ export const createRepositoryRouter = (githubService?: GitHubService): Router =>
 
   return router;
 };
-
-export const repositoryRouter = createRepositoryRouter();

@@ -1,7 +1,7 @@
 import cors from 'cors';
 import express, { type Express } from 'express';
 import { healthRouter } from './routes/health.js';
-import { repositoryRouter } from './routes/repository.js';
+import { createRepositoryRouter } from './routes/repository.js';
 
 /**
  * Expressアプリケーションの作成と設定
@@ -30,7 +30,7 @@ export const createApp = (): Express => {
 
   // ルーター設定
   app.use('/api/health', healthRouter);
-  app.use('/api/repositories', repositoryRouter);
+  app.use('/api/repositories', createRepositoryRouter());
 
   return app;
 };
