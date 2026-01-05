@@ -32,36 +32,46 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
         <title>Git Commit Graph</title>
 
         <defs>
-          {/* ラインのグラデーション */}
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
             <stop offset="50%" stopColor="#06b6d4" stopOpacity={1} />
             <stop offset="100%" stopColor="#10b981" stopOpacity={1} />
           </linearGradient>
 
-          {/* ノードのグラデーション */}
           <linearGradient id={nodeGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#06b6d4" stopOpacity={1} />
             <stop offset="100%" stopColor="#10b981" stopOpacity={1} />
           </linearGradient>
         </defs>
 
-        {/* グラデーションライン（ノードより上に配置） */}
-        <line
+        {/* グラデーションライン */}
+        <motion.line
           x1={startX - 20}
-          y1={yPosition - 0.1}
+          y1={yPosition - 1}
           x2={svgWidth - 50}
-          y2={yPosition}
+          y2={yPosition - 1.1}
           stroke={`url(#${gradientId})`}
           strokeWidth={6}
           strokeLinecap="round"
           opacity={0.6}
+          {...{
+            initial: { pathLength: 0, opacity: 0 },
+            animate: { pathLength: 1, opacity: 0.6 },
+            transition: {
+              duration: 1.2,
+              ease: 'easeInOut',
+              opacity: { duration: 0.3 },
+            },
+          }}
         />
 
         {/* コミットノード */}
         {sortedCommits.map((commit, index) => {
           const cx = startX + index * nodeSpacing;
           const cy = yPosition;
+
+          // ノードの登場タイミング（ラインより少し早め）
+          const nodeDelay = index * 0.03;
 
           return (
             <g key={commit.id}>
@@ -75,10 +85,11 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
                   initial: { scale: 0, opacity: 0 },
                   animate: { scale: 1, opacity: 1 },
                   transition: {
-                    delay: index * 0.08,
+                    delay: nodeDelay,
                     duration: 0.4,
                     type: 'spring',
-                    stiffness: 150,
+                    stiffness: 200,
+                    damping: 15,
                   },
                 }}
               />
@@ -96,14 +107,15 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
                   initial: { scale: 0 },
                   animate: { scale: 1 },
                   whileHover: {
-                    scale: 1.4,
-                    filter: 'brightness(1.2)',
+                    scale: 1.5,
+                    filter: 'brightness(1.3) drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))',
                   },
                   transition: {
-                    delay: index * 0.08,
+                    delay: nodeDelay,
                     duration: 0.4,
                     type: 'spring',
-                    stiffness: 150,
+                    stiffness: 200,
+                    damping: 15,
                   },
                 }}
               >
@@ -111,16 +123,24 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
               </motion.circle>
 
               {/* 短縮SHA */}
-              <text
+              <motion.text
                 x={cx}
                 y={cy + 30}
                 textAnchor="middle"
                 fontSize={10}
                 fill="#6b7280"
                 fontFamily="'Fira Code', monospace"
+                {...{
+                  initial: { opacity: 1, y: 100 },
+                  animate: { opacity: 1, y: 25 },
+                  transition: {
+                    delay: nodeDelay,
+                    duration: 0.3,
+                  },
+                }}
               >
                 {commit.shortId}
-              </text>
+              </motion.text>
             </g>
           );
         })}

@@ -33,10 +33,10 @@
 }
 
 .container::-webkit-scrollbar-thumb {
-  background: var(--color-border-medium); /* 単色 */
+  background: var(--color-border-medium);
   border-radius: var(--radius-md);
 }
 
 .container::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-tertiary); /* ホバー時少し濃く */
+  background: var(--color-text-tertiary);
 }
