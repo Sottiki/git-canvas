@@ -1,0 +1,42 @@
+.container {
+  width: 100%;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.svg {
+  display: block;
+}
+
+.commitNode {
+  cursor: pointer;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: filter 0.2s ease;
+}
+
+.commitNode:hover {
+  filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.3));
+}
+
+.container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.container::-webkit-scrollbar-track {
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  margin: 0 var(--spacing-md);
+}
+
+.container::-webkit-scrollbar-thumb {
+  background: var(--color-border-medium); /* 単色 */
+  border-radius: var(--radius-md);
+}
+
+.container::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary); /* ホバー時少し濃く */
+}
