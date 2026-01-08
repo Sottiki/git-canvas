@@ -140,6 +140,7 @@ describe('useRepository', () => {
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(result.current.loading).toBe(false); // 追加
     });
 
     expect(result.current.repository).toEqual(mockRepository2);
