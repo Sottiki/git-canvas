@@ -143,7 +143,7 @@ describe('RepositoryViewer', () => {
     expect(screen.getByText('(1)')).toBeInTheDocument();
     expect(screen.getByText('Test commit')).toBeInTheDocument();
     expect(screen.getByText(/Test User/)).toBeInTheDocument();
-    expect(screen.getByText(/abc123d/)).toBeInTheDocument();
+    expect(screen.getAllByText(/abc123d/).length).toBeGreaterThan(0);
 
     // Assert - アバター画像
     const avatar = screen.getByAltText('Test User');

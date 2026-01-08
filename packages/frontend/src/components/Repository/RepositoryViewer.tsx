@@ -1,4 +1,5 @@
 import { useRepository } from '../../hooks/useRepository';
+import { GitGraph } from '../GitGraph/GitGraph';
 import styles from './RepositoryViewer.module.css';
 
 /**
@@ -25,7 +26,6 @@ export const RepositoryViewer = ({ owner, repo }: RepositoryViewerProps) => {
     );
   }
 
-  // エラー表示
   if (error) {
     return (
       <div className={styles.container}>
@@ -63,6 +63,12 @@ export const RepositoryViewer = ({ owner, repo }: RepositoryViewerProps) => {
           Refresh
         </button>
       </div>
+
+      {/* Git グラフ */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Commit Graph</h3>
+        <GitGraph commits={repository.commits} />
+      </section>
 
       {/* ブランチセクション */}
       <section className={styles.section}>
