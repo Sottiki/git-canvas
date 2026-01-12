@@ -3,8 +3,7 @@
  * Phase 2.1: 単一レーン（Phase 1の再現）
  */
 
-import type { CanvasCommit } from '@git-canvas/shared/types';
-
+import type { CanvasCommit } from '@repo/shared';
 import { describe, expect, it } from 'vitest';
 import { calculateGitGraphLayout } from '../layoutCalculator';
 
@@ -127,5 +126,71 @@ describe('calculateGitGraphLayout - Phase 2.1 (単一レーン)', () => {
       toCommitId: 'commit1',
       type: 'normal',
     });
+  });
+});
+
+describe('calculateGitGraphLayout - Phase 2.2 (複数レーン)', () => {
+  /**
+   * テストケース4: シンプルなブランチ分岐
+   * main: commit1 → commit2
+   * feature: commit3（commit2から分岐）
+   */
+  it('ブランチ分岐の場合、異なるレーンに配置される', () => {
+    const commits: CanvasCommit[] = [
+      {
+        id: 'commit1',
+        shortId: 'commit1',
+        message: 'Initial commit',
+        fullMessage: 'Initial commit',
+        date: '2025-01-01T00:00:00Z',
+        author: { name: 'User', email: 'user@example.com' },
+        parentIds: [],
+        branchNames: ['main'],
+        url: 'https://github.com/owner/repo/commit/commit1',
+      },
+      {
+        id: 'commit2',
+        shortId: 'commit2',
+        message: 'Second commit on main',
+        fullMessage: 'Second commit on main',
+        date: '2025-01-02T00:00:00Z',
+        author: { name: 'User', email: 'user@example.com' },
+        parentIds: ['commit1'],
+        branchNames: ['main'],
+        url: 'https://github.com/owner/repo/commit/commit2',
+      },
+      {
+        id: 'commit3',
+        shortId: 'commit3',
+        message: 'Feature commit',
+        fullMessage: 'Feature commit',
+        date: '2025-01-03T00:00:00Z',
+        author: { name: 'User', email: 'user@example.com' },
+        parentIds: ['commit2'], // commit2から分岐
+        branchNames: ['feature'], // mainではなくfeature
+        url: 'https://github.com/owner/repo/commit/commit3',
+      },
+    ];
+
+    const layout = calculateGitGraphLayout(commits);
+
+    // ノードが3つ
+    expect(layout.nodes).toHaveLength(3);
+
+    // commit1, commit2はmainブランチなのでlane 0
+    const node1 = layout.nodes.find((n) => n.id === 'commit1');
+    const node2 = layout.nodes.find((n) => n.id === 'commit2');
+    const node3 = layout.nodes.find((n) => n.id === 'commit3');
+
+    expect(node1?.lane).toBe(0); // main
+    expect(node2?.lane).toBe(0); // main
+
+    // commit3はfeatureブランチなのでlane 1（異なるレーン）
+    expect(node3?.lane).toBe(1); // feature
+
+    // レーンが2つ存在する
+    expect(layout.lanes).toHaveLength(2);
+    expect(layout.lanes.find((l) => l.laneNumber === 0)).toBeDefined();
+    expect(layout.lanes.find((l) => l.laneNumber === 1)).toBeDefined();
   });
 });

@@ -89,16 +89,21 @@ function sortCommitsByDate(commits: CanvasCommit[]): CanvasCommit[] {
 
 /**
  * 各コミットにレーン番号を割り当て
- *
- * - すべてのコミットをlane 0（mainブランチ）に配置
- * - Phase 2.2で複数ブランチ対応に拡張予定
  */
 function assignLanes(commits: CanvasCommit[]): Map<string, number> {
   const laneMap = new Map<string, number>();
 
-  // Phase 2.1: すべてlane 0に配置
   for (const commit of commits) {
-    laneMap.set(commit.id, 0);
+    // branchNamesを確認してレーンを決定
+    const isMainBranch = commit.branchNames.includes('main');
+
+    if (isMainBranch) {
+      // mainブランチはlane 0
+      laneMap.set(commit.id, 0);
+    } else {
+      // それ以外はlane 1
+      laneMap.set(commit.id, 1);
+    }
   }
 
   return laneMap;
