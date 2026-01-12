@@ -51,6 +51,21 @@ describe('GitHubService', () => {
         },
       ];
 
+      const mockGitHubBranches: GitHubBranch[] = [
+        {
+          name: 'main',
+          commit: {
+            sha: 'abc123def456789012345678901234567890abcd',
+            url: 'https://api.github.com/repos/owner/repo/commits/abc123',
+          },
+          protected: false,
+        },
+      ];
+
+      // getCommitsは内部でgetBranchesを呼ぶため、両方をモック
+      (mockClient.fetchBranches as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+        mockGitHubBranches
+      );
       (mockClient.fetchCommits as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
         mockGitHubCommits
       );
@@ -72,22 +87,38 @@ describe('GitHubService', () => {
           avatarUrl: 'https://example.com/avatar.jpg',
         },
         parentIds: ['parent123'],
-        branchNames: [],
+        branchNames: ['main'], // ブランチ情報が含まれる
         url: 'https://github.com/owner/repo/commit/abc123',
       });
 
-      // クライアントが正しく呼ばれたか
-      expect(mockClient.fetchCommits).toHaveBeenCalledWith('owner', 'repo', undefined);
+      // getBranchesも呼ばれることを確認
+      expect(mockClient.fetchBranches).toHaveBeenCalledWith('owner', 'repo');
+      expect(mockClient.fetchCommits).toHaveBeenCalledWith('owner', 'repo', {
+        sha: 'main',
+      });
     });
 
     it('ページネーションオプションをクライアントに渡す', async () => {
+      const mockGitHubBranches: GitHubBranch[] = [
+        {
+          name: 'main',
+          commit: { sha: 'abc123', url: 'https://...' },
+          protected: false,
+        },
+      ];
+
+      (mockClient.fetchBranches as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+        mockGitHubBranches
+      );
       (mockClient.fetchCommits as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
 
       await service.getCommits('owner', 'repo', { per_page: 50, page: 2 });
 
+      // ブランチごとにfetchCommitsが呼ばれる
       expect(mockClient.fetchCommits).toHaveBeenCalledWith('owner', 'repo', {
         per_page: 50,
         page: 2,
+        sha: 'main',
       });
     });
   });
@@ -178,11 +209,12 @@ describe('GitHubService', () => {
         },
       ];
 
+      // getCommitsが内部でgetBranchesを呼ぶため、2回モック
+      (mockClient.fetchBranches as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(mockGitHubBranches) // getCommits内部で使用
+        .mockResolvedValueOnce(mockGitHubBranches); // getRepository内部で使用
       (mockClient.fetchCommits as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
         mockGitHubCommits
-      );
-      (mockClient.fetchBranches as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
-        mockGitHubBranches
       );
 
       // Act: リポジトリ情報取得
@@ -199,22 +231,28 @@ describe('GitHubService', () => {
       expect(result.commits).toHaveLength(1);
       expect(result.branches).toHaveLength(1);
 
-      // 両方のメソッドが呼ばれたことを確認
-      expect(mockClient.fetchCommits).toHaveBeenCalledWith('owner', 'repo', undefined);
-      expect(mockClient.fetchBranches).toHaveBeenCalledWith('owner', 'repo');
+      // fetchBranchesが2回呼ばれる（getCommits内とgetBranches内）
+      expect(mockClient.fetchBranches).toHaveBeenCalledTimes(2);
+      expect(mockClient.fetchCommits).toHaveBeenCalledTimes(1);
     });
 
     it('コミットとブランチの取得が並列実行される', async () => {
       // Arrange
+      const mockBranches: GitHubBranch[] = [
+        { name: 'main', commit: { sha: 'abc', url: '...' }, protected: false },
+      ];
+
+      (mockClient.fetchBranches as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(mockBranches) // getCommits内
+        .mockResolvedValueOnce(mockBranches); // getBranches内
       (mockClient.fetchCommits as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
-      (mockClient.fetchBranches as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
 
       // Act
       await service.getRepository('owner', 'repo');
 
-      // Assert: 両方が呼ばれたことを確認（Promise.allによる並列実行）
+      // Assert: 両方が呼ばれたことを確認
       expect(mockClient.fetchCommits).toHaveBeenCalledTimes(1);
-      expect(mockClient.fetchBranches).toHaveBeenCalledTimes(1);
+      expect(mockClient.fetchBranches).toHaveBeenCalledTimes(2); // 2回呼ばれる
     });
   });
 });

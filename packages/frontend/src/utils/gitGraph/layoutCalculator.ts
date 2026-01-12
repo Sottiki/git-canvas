@@ -102,7 +102,6 @@ function sortCommitsByDate(commits: CanvasCommit[]): CanvasCommit[] {
 /**
  * 各コミットにレーン番号を割り当て
  *
- * Phase 2.2: ブランチ名に基づくレーン割り当て
  * - test-branchのみ → lane 1
  * - それ以外（mainを含む） → lane 0
  *
@@ -180,8 +179,6 @@ function generateConnections(nodes: CommitNode[]): CommitConnection[] {
         startY: node.y,
         endX: parentNode.x,
         endY: parentNode.y,
-        // Phase 2.1: すべて通常の接続
-        // Phase 2.2で異なるレーン間の接続を'merge'に分類予定
         type: 'normal',
       });
     }
