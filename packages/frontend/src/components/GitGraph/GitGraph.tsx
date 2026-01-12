@@ -1,6 +1,7 @@
 import type { CanvasCommit } from '@git-canvas/shared/types';
 import { motion } from 'framer-motion';
 import { useId } from 'react';
+import { calculateGitGraphLayout } from '../../utils/gitGraph/layoutCalculator';
 import styles from './GitGraph.module.css';
 
 interface GitGraphProps {
@@ -8,27 +9,38 @@ interface GitGraphProps {
 }
 
 export const GitGraph = ({ commits }: GitGraphProps) => {
-  const nodeRadius = 8;
-  const nodeSpacing = 80;
-  const yPosition = 200;
-  const startX = 50;
+  // Phase 2.1: レイアウト計算を layoutCalculator に移行
+  const layout = calculateGitGraphLayout(commits, {
+    nodeSpacing: 80,
+    laneHeight: 60,
+    startX: 50,
+    startY: 200, // Phase 1のyPosition
+    nodeRadius: 8,
+  });
 
-  const sortedCommits = [...commits].reverse();
-  const svgWidth = sortedCommits.length * nodeSpacing + 100;
+  const nodeRadius = 8;
+
+  // アニメーション設定（Phase 1を踏襲）
+  const lineDuration = 2.0;
+  const nodeInterval = layout.nodes.length > 0 ? 2.0 / layout.nodes.length : 0;
 
   const id = useId();
   const gradientId = `lineGradient-${id}`;
   const nodeGradientId = `nodeGradient-${id}`;
 
-  // アニメーション設定
-  const lineDuration = 2.0; // ライン描画時間（1.2秒 → 2.0秒）
-  const nodeInterval = 2.0 / sortedCommits.length; // ノード間隔を均等に
+  // SVGのサイズ（Phase 1の計算方法を維持）
+  const svgWidth = layout.viewBox.width;
+  const svgHeight = 300; // Phase 1の高さを維持
+
+  // firstNode, lastNodeがnullの可能性を考慮
+  const firstNode = layout.nodes.length > 0 ? layout.nodes[0] : null;
+  const lastNode = layout.nodes.length > 0 ? layout.nodes[layout.nodes.length - 1] : null;
 
   return (
     <div className={styles.container}>
       <svg
         width={svgWidth}
-        height="300"
+        height={svgHeight}
         className={styles.svg}
         role="img"
         aria-label="Git commit graph"
@@ -47,38 +59,38 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
         </defs>
 
         {/* グラデーションライン */}
-        <motion.line
-          x1={startX}
-          y1={yPosition - 1}
-          x2={startX + (sortedCommits.length - 1) * nodeSpacing}
-          y2={yPosition - 1.1}
-          stroke={`url(#${gradientId})`}
-          strokeWidth={6}
-          strokeLinecap="round"
-          opacity={0.6}
-          {...{
-            initial: { pathLength: 0, opacity: 0 },
-            animate: { pathLength: 1, opacity: 0.6 },
-            transition: {
-              duration: lineDuration,
-              ease: 'easeInOut',
-              opacity: { duration: 0.3 },
-            },
-          }}
-        />
+        {firstNode && lastNode && (
+          <motion.line
+            x1={firstNode.x}
+            y1={firstNode.y - 1}
+            x2={lastNode.x}
+            y2={lastNode.y - 1.1}
+            stroke={`url(#${gradientId})`}
+            strokeWidth={6}
+            strokeLinecap="round"
+            opacity={0.6}
+            {...{
+              initial: { pathLength: 0, opacity: 0 },
+              animate: { pathLength: 1, opacity: 0.6 },
+              transition: {
+                duration: lineDuration,
+                ease: 'easeInOut',
+                opacity: { duration: 0.3 },
+              },
+            }}
+          />
+        )}
 
         {/* コミットノード */}
-        {sortedCommits.map((commit, index) => {
-          const cx = startX + index * nodeSpacing;
-          const cy = yPosition;
+        {layout.nodes.map((node, index) => {
           const nodeDelay = index * nodeInterval;
 
           return (
-            <g key={commit.id}>
+            <g key={node.id}>
               {/* ノードの影 */}
               <motion.circle
-                cx={cx}
-                cy={cy}
+                cx={node.x}
+                cy={node.y}
                 r={nodeRadius + 3}
                 fill="rgba(59, 130, 246, 0.15)"
                 {...{
@@ -96,8 +108,8 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
 
               {/* メインノード */}
               <motion.circle
-                cx={cx}
-                cy={cy}
+                cx={node.x}
+                cy={node.y}
                 r={nodeRadius}
                 fill={`url(#${nodeGradientId})`}
                 stroke="white"
@@ -118,12 +130,12 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
                     damping: 15,
                   },
                 }}
-              ></motion.circle>
+              />
 
               {/* 短縮SHA */}
               <motion.text
-                x={cx}
-                y={cy + 30}
+                x={node.x}
+                y={node.y + 30}
                 textAnchor="middle"
                 fontSize={10}
                 fill="#6b7280"
@@ -137,7 +149,7 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
                   },
                 }}
               >
-                {commit.shortId}
+                {node.shortId}
               </motion.text>
             </g>
           );
