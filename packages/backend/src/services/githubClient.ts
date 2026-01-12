@@ -22,16 +22,19 @@ export class GitHubClient {
    *
    * @param owner - リポジトリオーナー
    * @param repo - リポジトリ名
-   * @param options - オプション（per_page, page等）
+   * @param options - オプション（per_page, page, sha等）
    * @returns コミット一覧
    */
   async fetchCommits(
     owner: string,
     repo: string,
-    options: { per_page?: number; page?: number } = {}
+    options: { per_page?: number; page?: number; sha?: string } = {}
   ): Promise<GitHubCommit[]> {
-    const { per_page = 100, page = 1 } = options;
-    const url = `${this.baseUrl}/repos/${owner}/${repo}/commits?per_page=${per_page}&page=${page}`;
+    const { per_page = 100, page = 1, sha } = options;
+
+    // shaが指定されている場合はクエリパラメータに追加
+    const shaParam = sha ? `&sha=${encodeURIComponent(sha)}` : '';
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/commits?per_page=${per_page}&page=${page}${shaParam}`;
 
     const response = await this.request<GitHubCommit[]>(url);
     return response;
