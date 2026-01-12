@@ -18,26 +18,9 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
     nodeRadius: 8,
   });
 
-  // 🔍 デバッグ: レイアウト情報をコンソールに出力
-  console.log('=== GitGraph Debug ===');
-  console.log('Total commits:', commits.length);
-  console.log('Layout nodes:', layout.nodes.length);
-  console.log('Layout lanes:', layout.lanes);
-  console.log(
-    'Nodes detail:',
-    layout.nodes.map((n) => ({
-      shortId: n.shortId,
-      lane: n.lane,
-      y: n.y,
-      branchNames: n.branchNames,
-    }))
-  );
-  console.log('=====================');
-
   const nodeRadius = 8;
 
   // アニメーション設定（Phase 1を踏襲）
-  const lineDuration = 2.0;
   const nodeInterval = layout.nodes.length > 0 ? 2.0 / layout.nodes.length : 0;
 
   const id = useId();
@@ -45,12 +28,8 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
   const nodeGradientId = `nodeGradient-${id}`;
 
   // SVGのサイズ（Phase 1の計算方法を維持）
-  const svgWidth = layout.viewBox.width;
+  const svgWidth = layout.nodes.length > 0 ? layout.viewBox.width : 100;
   const svgHeight = 300; // Phase 1の高さを維持
-
-  // firstNode, lastNodeがnullの可能性を考慮
-  const firstNode = layout.nodes.length > 0 ? layout.nodes[0] : null;
-  const lastNode = layout.nodes.length > 0 ? layout.nodes[layout.nodes.length - 1] : null;
 
   return (
     <div className={styles.container}>
@@ -74,28 +53,21 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
           </linearGradient>
         </defs>
 
-        {/* グラデーションライン */}
-        {firstNode && lastNode && (
-          <motion.line
-            x1={firstNode.x}
-            y1={firstNode.y - 1}
-            x2={lastNode.x}
-            y2={lastNode.y - 1.1}
-            stroke={`url(#${gradientId})`}
-            strokeWidth={6}
+        {/* コミット間の接続線 */}
+        {layout.connections.map((connection) => (
+          <line
+            key={`${connection.fromCommitId}-${connection.toCommitId}`}
+            x1={connection.startX}
+            y1={connection.startY}
+            x2={connection.endX}
+            y2={connection.endY}
+            stroke="#06b6d4"
+            strokeWidth={3}
             strokeLinecap="round"
-            opacity={0.6}
-            {...{
-              initial: { pathLength: 0, opacity: 0 },
-              animate: { pathLength: 1, opacity: 0.6 },
-              transition: {
-                duration: lineDuration,
-                ease: 'easeInOut',
-                opacity: { duration: 0.3 },
-              },
-            }}
+            opacity={1}
+            style={{ pointerEvents: 'none' }}
           />
-        )}
+        ))}
 
         {/* コミットノード */}
         {layout.nodes.map((node, index) => {
@@ -103,8 +75,8 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
 
           return (
             <g key={node.id}>
-              {/* ノードの影 */}
-              <motion.circle
+              {/* ノードの影 - 一時的に無効化 */}
+              {/* <motion.circle
                 cx={node.x}
                 cy={node.y}
                 r={nodeRadius + 3}
@@ -120,7 +92,7 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
                     damping: 15,
                   },
                 }}
-              />
+              /> */}
 
               {/* メインノード */}
               <motion.circle

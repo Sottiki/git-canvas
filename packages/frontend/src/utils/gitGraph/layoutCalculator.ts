@@ -103,8 +103,8 @@ function sortCommitsByDate(commits: CanvasCommit[]): CanvasCommit[] {
  * 各コミットにレーン番号を割り当て
  *
  * Phase 2.2: ブランチ名に基づくレーン割り当て
- * - mainブランチ専有 → lane 0
- * - それ以外（featureブランチを含む） → lane 1
+ * - test-branchのみ → lane 1
+ * - それ以外（mainを含む） → lane 0
  *
  * TODO Phase 2.3: 複数のfeatureブランチを異なるレーンに配置
  */
@@ -112,21 +112,14 @@ function assignLanes(commits: CanvasCommit[]): Map<string, number> {
   const laneMap = new Map<string, number>();
 
   for (const commit of commits) {
-    // branchNamesを確認してレーンを決定
-    const isMainOnly = commit.branchNames.includes('main') && commit.branchNames.length === 1;
+    // test-branchのみに属するコミット → lane 1
+    const isTestBranchOnly =
+      commit.branchNames.includes('test-branch') && commit.branchNames.length === 1;
 
-    const hasFeatureBranch = commit.branchNames.some(
-      (name: string) => name.startsWith('feature/') || (!name.includes('main') && name.length > 0)
-    );
-
-    if (isMainOnly) {
-      // mainブランチ専有 → lane 0
-      laneMap.set(commit.id, 0);
-    } else if (hasFeatureBranch) {
-      // featureブランチを含む → lane 1
+    if (isTestBranchOnly) {
       laneMap.set(commit.id, 1);
     } else {
-      // デフォルト（情報がない場合など） → lane 0
+      // それ以外はすべてlane 0
       laneMap.set(commit.id, 0);
     }
   }

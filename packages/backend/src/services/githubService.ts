@@ -32,6 +32,7 @@ export class GitHubService {
 
   /**
    * リポジトリのコミット一覧を取得（Canvas型）
+   * 全ブランチのコミットを取得してマージします
    *
    * @param owner - リポジトリオーナー
    * @param repo - リポジトリ名
@@ -43,11 +44,27 @@ export class GitHubService {
     repo: string,
     options?: { per_page?: number; page?: number }
   ): Promise<CanvasCommit[]> {
-    // GitHub API からコミットとブランチを並列取得
-    const [githubCommits, branches] = await Promise.all([
-      this.client.fetchCommits(owner, repo, options),
-      this.getBranches(owner, repo),
-    ]);
+    // まずブランチ一覧を取得
+    const branches = await this.getBranches(owner, repo);
+
+    // 各ブランチのコミットを並列取得
+    const branchCommitsPromises = branches.map((branch) =>
+      this.client.fetchCommits(owner, repo, {
+        ...options,
+        sha: branch.name, // ブランチ名を指定
+      })
+    );
+
+    const branchCommitsArrays = await Promise.all(branchCommitsPromises);
+
+    // 全ブランチのコミットをフラット化し、重複を除去（SHAでユニーク化）
+    const commitMap = new Map<string, GitHubCommit>();
+    for (const commits of branchCommitsArrays) {
+      for (const commit of commits) {
+        commitMap.set(commit.sha, commit);
+      }
+    }
+    const githubCommits = Array.from(commitMap.values());
 
     // コミットSHA → ブランチ名リストのマップを構築
     const commitToBranches = this.buildCommitToBranchesMap(githubCommits, branches);
