@@ -18,6 +18,22 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
     nodeRadius: 8,
   });
 
+  // 🔍 デバッグ: レイアウト情報をコンソールに出力
+  console.log('=== GitGraph Debug ===');
+  console.log('Total commits:', commits.length);
+  console.log('Layout nodes:', layout.nodes.length);
+  console.log('Layout lanes:', layout.lanes);
+  console.log(
+    'Nodes detail:',
+    layout.nodes.map((n) => ({
+      shortId: n.shortId,
+      lane: n.lane,
+      y: n.y,
+      branchNames: n.branchNames,
+    }))
+  );
+  console.log('=====================');
+
   const nodeRadius = 8;
 
   // アニメーション設定（Phase 1を踏襲）

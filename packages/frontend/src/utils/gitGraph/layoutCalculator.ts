@@ -1,7 +1,9 @@
 /**
  * Git Graph レイアウト計算ロジック
+ * Phase 2: 複数ブランチ対応
  *
- * CanvasCommitの配列を受け取り、SVG描画用の座標情報を計算してGitGraphLayoutを生成する
+ * このモジュールは、CanvasCommitの配列を受け取り、
+ * SVG描画用の座標情報を計算してGitGraphLayoutを生成します。
  */
 
 import type {
@@ -15,6 +17,7 @@ import type {
 
 /**
  * デフォルトのレイアウト設定
+ * Phase 1の実装値を踏襲
  */
 const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
   nodeSpacing: 80, // ノード間の水平距離
@@ -58,16 +61,22 @@ export function calculateGitGraphLayout(
     };
   }
 
+  // Step 1: コミットを時系列でソート（古い順）
   const sortedCommits = sortCommitsByDate(commits);
 
+  // Step 2: レーン割り当て（シンプル版：Phase 2.1）
   const laneAssignments = assignLanes(sortedCommits);
 
+  // Step 3: ノードの座標計算
   const nodes = calculateNodePositions(sortedCommits, laneAssignments, layoutConfig);
 
+  // Step 4: 接続線の生成
   const connections = generateConnections(nodes);
 
+  // Step 5: ブランチレーン情報の生成
   const lanes = generateBranchLanes(nodes);
 
+  // Step 6: SVGビューボックスのサイズ計算
   const viewBox = calculateViewBox(nodes, layoutConfig);
 
   return {
@@ -80,6 +89,9 @@ export function calculateGitGraphLayout(
 
 /**
  * コミットを日付順（古い順）にソート
+ *
+ * Gitグラフは時系列で左から右に描画するため、
+ * 古いコミットが配列の先頭になるようソートします。
  */
 function sortCommitsByDate(commits: CanvasCommit[]): CanvasCommit[] {
   return [...commits].sort((a, b) => {
@@ -89,20 +101,33 @@ function sortCommitsByDate(commits: CanvasCommit[]): CanvasCommit[] {
 
 /**
  * 各コミットにレーン番号を割り当て
+ *
+ * Phase 2.2: ブランチ名に基づくレーン割り当て
+ * - mainブランチ専有 → lane 0
+ * - それ以外（featureブランチを含む） → lane 1
+ *
+ * TODO Phase 2.3: 複数のfeatureブランチを異なるレーンに配置
  */
 function assignLanes(commits: CanvasCommit[]): Map<string, number> {
   const laneMap = new Map<string, number>();
 
   for (const commit of commits) {
     // branchNamesを確認してレーンを決定
-    const isMainBranch = commit.branchNames.includes('main');
+    const isMainOnly = commit.branchNames.includes('main') && commit.branchNames.length === 1;
 
-    if (isMainBranch) {
-      // mainブランチはlane 0
+    const hasFeatureBranch = commit.branchNames.some(
+      (name: string) => name.startsWith('feature/') || (!name.includes('main') && name.length > 0)
+    );
+
+    if (isMainOnly) {
+      // mainブランチ専有 → lane 0
       laneMap.set(commit.id, 0);
-    } else {
-      // それ以外はlane 1
+    } else if (hasFeatureBranch) {
+      // featureブランチを含む → lane 1
       laneMap.set(commit.id, 1);
+    } else {
+      // デフォルト（情報がない場合など） → lane 0
+      laneMap.set(commit.id, 0);
     }
   }
 
@@ -197,6 +222,7 @@ function generateBranchLanes(nodes: CommitNode[]): BranchLane[] {
 /**
  * SVGビューボックスのサイズを計算
  *
+ * すべてのノードが収まるように、幅と高さを計算します。
  */
 function calculateViewBox(
   nodes: CommitNode[],
