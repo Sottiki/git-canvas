@@ -20,22 +20,31 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
 
   const nodeRadius = 8;
 
-  // アニメーション設定（Phase 1を踏襲）
+  // アニメーション設定
   const nodeInterval = layout.nodes.length > 0 ? 2.0 / layout.nodes.length : 0;
 
   const id = useId();
   const gradientId = `lineGradient-${id}`;
   const nodeGradientId = `nodeGradient-${id}`;
 
-  // SVGのサイズ（Phase 1の計算方法を維持）
+  // SVGのサイズ
   const svgWidth = layout.nodes.length > 0 ? layout.viewBox.width : 100;
-  const svgHeight = 300; // Phase 1の高さを維持
+
+  // レーン数に応じた動的な高さ計算
+  const maxLane = Math.max(...layout.nodes.map((n) => n.lane), 0);
+  const contentHeight = 200 + maxLane * 60 + 40; // startY + (lanes * laneHeight) + text space
+  const svgHeight = contentHeight;
+
+  // viewBox: 上部の余白を削減
+  const viewBoxY = 180; // startY(200) - 20px の余白
+  const viewBoxHeight = contentHeight - viewBoxY + 200;
 
   return (
     <div className={styles.container}>
       <svg
         width={svgWidth}
         height={svgHeight}
+        viewBox={`0 ${viewBoxY} ${svgWidth} ${viewBoxHeight}`}
         className={styles.svg}
         role="img"
         aria-label="Git commit graph"
@@ -55,7 +64,7 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
 
         {/* コミット間の接続線 */}
         {layout.connections.map((connection, index) => {
-          // Phase 1の対策: 同じY座標の場合、わずかにずらす
+          // ラインが表示されない対策: 同じY座標の場合はわずかにずらす
           const startY = connection.startY;
           const endY =
             connection.startY === connection.endY ? connection.endY - 0.1 : connection.endY;
