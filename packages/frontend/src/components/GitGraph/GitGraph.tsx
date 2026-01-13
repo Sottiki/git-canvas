@@ -54,20 +54,31 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
         </defs>
 
         {/* コミット間の接続線 */}
-        {layout.connections.map((connection) => (
-          <line
-            key={`${connection.fromCommitId}-${connection.toCommitId}`}
-            x1={connection.startX}
-            y1={connection.startY}
-            x2={connection.endX}
-            y2={connection.endY}
-            stroke="#06b6d4"
-            strokeWidth={3}
-            strokeLinecap="round"
-            opacity={1}
-            style={{ pointerEvents: 'none' }}
-          />
-        ))}
+        {layout.connections.map((connection, index) => {
+          // Phase 1の対策: 同じY座標の場合、わずかにずらす
+          const startY = connection.startY;
+          const endY =
+            connection.startY === connection.endY ? connection.endY - 0.1 : connection.endY;
+
+          return (
+            <motion.path
+              key={`${connection.fromCommitId}-to-${connection.toCommitId}`}
+              d={`M ${connection.startX} ${startY} L ${connection.endX} ${endY}`}
+              stroke={`url(#${gradientId})`}
+              strokeWidth={3}
+              strokeLinecap="round"
+              fill="none"
+              {...{
+                initial: { opacity: 0 },
+                animate: { opacity: 0.8 },
+                transition: {
+                  delay: index * 0.05,
+                  duration: 0.5,
+                },
+              }}
+            />
+          );
+        })}
 
         {/* コミットノード */}
         {layout.nodes.map((node, index) => {
