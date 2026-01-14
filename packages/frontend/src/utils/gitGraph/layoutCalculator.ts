@@ -102,7 +102,7 @@ function sortCommitsByDate(commits: CanvasCommit[]): CanvasCommit[] {
 /**
  * 各コミットにレーン番号を割り当て
  *
- * ブランチ名に基づくレーン割り当て
+ * Phase 2.2: ブランチ名に基づくレーン割り当て
  * - test-branchのみ → lane 1
  * - それ以外（mainを含む） → lane 0
  *
@@ -156,7 +156,7 @@ function calculateNodePositions(
  * コミット間の接続線を生成
  *
  * 各コミットから親コミットへの線を作成します。
- * マージコミット（親が2つ以上）の場合はtype='merge'を設定
+ * Phase 2.4: マージコミット（親が2つ以上）の場合はtype='merge'を設定
  * 親が存在しない場合（初回コミット）は線を作成しません。
  */
 function generateConnections(nodes: CommitNode[]): CommitConnection[] {
@@ -164,7 +164,7 @@ function generateConnections(nodes: CommitNode[]): CommitConnection[] {
   const nodeMap = new Map(nodes.map((node) => [node.id, node]));
 
   for (const node of nodes) {
-    // マージコミット判定
+    // Phase 2.4: マージコミット判定
     const isMergeCommit = node.parentIds.length >= 2;
 
     // 各親コミットへの接続を作成
