@@ -9,14 +9,24 @@ interface GitGraphProps {
 }
 
 export const GitGraph = ({ commits }: GitGraphProps) => {
-  // Phase 2.1: レイアウト計算を layoutCalculator に移行
   const layout = calculateGitGraphLayout(commits, {
     nodeSpacing: 80,
     laneHeight: 60,
     startX: 50,
-    startY: 200, // Phase 1のyPosition
+    startY: 200,
     nodeRadius: 8,
   });
+
+  // デバッグ: Y座標を確認
+  console.log(
+    'Layout nodes Y coordinates:',
+    layout.nodes.map((n) => ({
+      id: n.shortId,
+      lane: n.lane,
+      y: n.y,
+      branches: n.branchNames,
+    }))
+  );
 
   const nodeRadius = 8;
 
@@ -32,7 +42,8 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
 
   // レーン数に応じた動的な高さ計算
   const maxLane = Math.max(...layout.nodes.map((n) => n.lane), 0);
-  const contentHeight = 200 + maxLane * 60 + 40; // startY + lanes + text space
+  const mountainHeight = 40; // 山の高さ分の余白
+  const contentHeight = 200 + maxLane * 60 + 40 + mountainHeight; // startY + lanes + text + mountain
   const svgHeight = contentHeight;
 
   // viewBox: グラフを中央に配置
