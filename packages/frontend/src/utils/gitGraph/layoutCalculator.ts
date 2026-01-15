@@ -113,7 +113,6 @@ function findBranchPoints(commits: CanvasCommit[]): Set<string> {
 
     if (children.length >= 2) {
       branchPoints.add(commit.id);
-      console.log(`Branch point found: ${commit.shortId} (${children.length} children)`);
     }
   }
 
@@ -139,16 +138,12 @@ function findFeaturePaths(commits: CanvasCommit[], branchPoints: Set<string>): M
   let maxLaneUsed = 1;
 
   for (const mergeCommit of mergeCommits) {
-    console.log(`Processing merge commit: ${mergeCommit.shortId} at ${mergeCommit.date}`);
-
     if (mergeCommit.parentIds.length < 2) continue;
 
     // 空いている最小の lane を取得
     const featureLane = availableLanes.shift() || ++maxLaneUsed;
-    console.log(`Assigning lane ${featureLane} to this feature branch`);
 
     let currentId = mergeCommit.parentIds[1]; // feature側の親
-    const pathCommits: string[] = [];
 
     // 分岐点に到達するまで親を辿る
     let maxDepth = 100;
@@ -156,16 +151,11 @@ function findFeaturePaths(commits: CanvasCommit[], branchPoints: Set<string>): M
       maxDepth--;
 
       if (branchPoints.has(currentId)) {
-        console.log(`Reached branch point: ${commitMap.get(currentId)?.shortId}`);
         break;
       }
 
       if (!commitToLane.has(currentId)) {
         commitToLane.set(currentId, featureLane);
-        pathCommits.push(currentId);
-        console.log(
-          `Added to feature path: ${commitMap.get(currentId)?.shortId} → lane ${featureLane}`
-        );
       }
 
       const current = commitMap.get(currentId);
@@ -179,7 +169,6 @@ function findFeaturePaths(commits: CanvasCommit[], branchPoints: Set<string>): M
     // このマージが完了したら lane を再利用可能にする
     availableLanes.push(featureLane);
     availableLanes.sort((a, b) => a - b); // 小さい順に並べる
-    console.log(`Lane ${featureLane} is now available for reuse`);
   }
 
   return commitToLane;
@@ -190,10 +179,9 @@ function findFeaturePaths(commits: CanvasCommit[], branchPoints: Set<string>): M
  *
  * lane 1以上（featureブランチ）を下に配置して山を作る
  */
-function calculateMountainHeight(commit: CanvasCommit, lane: number): number {
+function calculateMountainHeight(_commit: CanvasCommit, lane: number): number {
   // lane 1以上（feature）は下に配置
   if (lane >= 1) {
-    console.log(`Mountain height for ${commit.shortId} (lane ${lane}): +40px`);
     return 40; // 下方向
   }
 
@@ -221,7 +209,6 @@ function assignLanes(commits: CanvasCommit[]): Map<string, number> {
     // マージコミットは常に lane 0
     const isMergeCommit = commit.parentIds.length >= 2;
     if (isMergeCommit) {
-      console.log(`Merge commit ${commit.shortId} → lane 0`);
       laneMap.set(commit.id, 0);
       continue;
     }
@@ -229,7 +216,6 @@ function assignLanes(commits: CanvasCommit[]): Map<string, number> {
     // マージ済み feature パス上のコミット
     if (commitToLane.has(commit.id)) {
       const lane = commitToLane.get(commit.id)!;
-      console.log(`Merged feature commit ${commit.shortId} → lane ${lane}`);
       laneMap.set(commit.id, lane);
       continue;
     }
@@ -240,9 +226,6 @@ function assignLanes(commits: CanvasCommit[]): Map<string, number> {
       // 利用可能な最大の lane + 1 を割り当て
       const maxLane = Math.max(0, ...commitToLane.values());
       const newLane = maxLane + 1;
-      console.log(
-        `Unmerged feature commit ${commit.shortId} (${commit.branchNames.join(',')}) → lane ${newLane}`
-      );
       laneMap.set(commit.id, newLane);
       continue;
     }

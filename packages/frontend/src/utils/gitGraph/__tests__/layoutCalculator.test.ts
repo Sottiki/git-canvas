@@ -34,7 +34,8 @@ describe('calculateGitGraphLayout - (複数レーン + 接続線)', () => {
     // Assert
     expect(layout.nodes).toHaveLength(1);
     expect(layout.nodes[0].lane).toBe(1);
-    expect(layout.nodes[0].y).toBe(260); // startY(200) + laneHeight(60)
+    // Y座標 = startY(200) + laneHeight(60) × lane(1) + mountainHeight(40)
+    expect(layout.nodes[0].y).toBe(300);
   });
 
   it('mainを含むコミットはlane 0に配置される', () => {
@@ -153,7 +154,8 @@ describe('calculateGitGraphLayout - (複数レーン + 接続線)', () => {
 
     // Assert
     const connection = layout.connections[0];
-    expect(connection.startY).toBe(260); // test-branch (lane 1)
+    // test-branch (lane 1) + mountainHeight(40) = 200 + 60 + 40 = 300
+    expect(connection.startY).toBe(300);
     expect(connection.endY).toBe(200); // main (lane 0)
   });
 

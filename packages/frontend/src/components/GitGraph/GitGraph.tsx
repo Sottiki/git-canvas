@@ -17,17 +17,6 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
     nodeRadius: 8,
   });
 
-  // デバッグ: Y座標を確認
-  console.log(
-    'Layout nodes Y coordinates:',
-    layout.nodes.map((n) => ({
-      id: n.shortId,
-      lane: n.lane,
-      y: n.y,
-      branches: n.branchNames,
-    }))
-  );
-
   const nodeRadius = 8;
 
   // アニメーション設定（Phase 1を踏襲）
