@@ -9,12 +9,11 @@ interface GitGraphProps {
 }
 
 export const GitGraph = ({ commits }: GitGraphProps) => {
-  // Phase 2.1: レイアウト計算を layoutCalculator に移行
   const layout = calculateGitGraphLayout(commits, {
     nodeSpacing: 80,
     laneHeight: 60,
     startX: 50,
-    startY: 200, // Phase 1のyPosition
+    startY: 200,
     nodeRadius: 8,
   });
 
@@ -27,15 +26,25 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
   const gradientId = `lineGradient-${id}`;
   const nodeGradientId = `nodeGradient-${id}`;
 
-  // SVGのサイズ（Phase 1の計算方法を維持）
+  // SVGのサイズ
   const svgWidth = layout.nodes.length > 0 ? layout.viewBox.width : 100;
-  const svgHeight = 300; // Phase 1の高さを維持
+
+  // レーン数に応じた動的な高さ計算
+  const maxLane = Math.max(...layout.nodes.map((n) => n.lane), 0);
+  const mountainHeight = 40; // 山の高さ分の余白
+  const contentHeight = 200 + maxLane * 60 + 40 + mountainHeight; // startY + lanes + text + mountain
+  const svgHeight = contentHeight;
+
+  // viewBox: グラフを中央に配置
+  const viewBoxY = 150;
+  const viewBoxHeight = contentHeight - viewBoxY + 200;
 
   return (
     <div className={styles.container}>
       <svg
         width={svgWidth}
         height={svgHeight}
+        viewBox={`0 ${viewBoxY} ${svgWidth} ${viewBoxHeight}`}
         className={styles.svg}
         role="img"
         aria-label="Git commit graph"
@@ -51,27 +60,46 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
             <stop offset="0%" stopColor="#06b6d4" stopOpacity={1} />
             <stop offset="100%" stopColor="#10b981" stopOpacity={1} />
           </linearGradient>
+
+          {/* Phase 2.4: マージノード用のグラデーション */}
+          <linearGradient id="mergeNodeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#f59e0b" stopOpacity={1} />
+            <stop offset="100%" stopColor="#ef4444" stopOpacity={1} />
+          </linearGradient>
         </defs>
 
         {/* コミット間の接続線 */}
-        {layout.connections.map((connection) => (
-          <line
-            key={`${connection.fromCommitId}-${connection.toCommitId}`}
-            x1={connection.startX}
-            y1={connection.startY}
-            x2={connection.endX}
-            y2={connection.endY}
-            stroke="#06b6d4"
-            strokeWidth={3}
-            strokeLinecap="round"
-            opacity={1}
-            style={{ pointerEvents: 'none' }}
-          />
-        ))}
+        {layout.connections.map((connection, index) => {
+          const startY = connection.startY;
+          const endY =
+            connection.startY === connection.endY ? connection.endY - 0.1 : connection.endY;
+
+          return (
+            <motion.path
+              key={`${connection.fromCommitId}-to-${connection.toCommitId}`}
+              d={`M ${connection.startX} ${startY} L ${connection.endX} ${endY}`}
+              stroke={`url(#${gradientId})`}
+              strokeWidth={3}
+              strokeLinecap="round"
+              fill="none"
+              {...{
+                initial: { opacity: 0 },
+                animate: { opacity: 0.8 },
+                transition: {
+                  delay: index * 0.05,
+                  duration: 0.5,
+                },
+              }}
+            />
+          );
+        })}
 
         {/* コミットノード */}
         {layout.nodes.map((node, index) => {
           const nodeDelay = index * nodeInterval;
+
+          // Phase 2.4: マージコミット判定
+          const isMergeCommit = node.parentIds.length >= 2;
 
           return (
             <g key={node.id}>
@@ -95,30 +123,57 @@ export const GitGraph = ({ commits }: GitGraphProps) => {
               /> */}
 
               {/* メインノード */}
-              <motion.circle
-                cx={node.x}
-                cy={node.y}
-                r={nodeRadius}
-                fill={`url(#${nodeGradientId})`}
-                stroke="white"
-                strokeWidth={2.5}
-                className={styles.commitNode}
-                {...{
-                  initial: { scale: 0 },
-                  animate: { scale: 1 },
-                  whileHover: {
-                    scale: 1.5,
-                    filter: 'brightness(1.3) drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))',
-                  },
-                  transition: {
-                    delay: nodeDelay,
-                    duration: 0.5,
-                    type: 'spring',
-                    stiffness: 200,
-                    damping: 15,
-                  },
-                }}
-              />
+              {isMergeCommit ? (
+                // Phase 2.4: マージノード（ダイヤモンド形状）
+                <motion.path
+                  d={`M ${node.x} ${node.y - 10} L ${node.x + 10} ${node.y} L ${node.x} ${node.y + 10} L ${node.x - 10} ${node.y} Z`}
+                  fill="url(#mergeNodeGradient)"
+                  stroke="white"
+                  strokeWidth={2.5}
+                  className={styles.commitNode}
+                  {...{
+                    initial: { scale: 0 },
+                    animate: { scale: 1 },
+                    whileHover: {
+                      scale: 1.3,
+                      filter: 'brightness(1.3) drop-shadow(0 0 8px rgba(245, 158, 11, 0.6))',
+                    },
+                    transition: {
+                      delay: nodeDelay,
+                      duration: 0.5,
+                      type: 'spring',
+                      stiffness: 200,
+                      damping: 15,
+                    },
+                  }}
+                />
+              ) : (
+                // 通常ノード（円形）
+                <motion.circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={nodeRadius}
+                  fill={`url(#${nodeGradientId})`}
+                  stroke="white"
+                  strokeWidth={2.5}
+                  className={styles.commitNode}
+                  {...{
+                    initial: { scale: 0 },
+                    animate: { scale: 1 },
+                    whileHover: {
+                      scale: 1.5,
+                      filter: 'brightness(1.3) drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))',
+                    },
+                    transition: {
+                      delay: nodeDelay,
+                      duration: 0.5,
+                      type: 'spring',
+                      stiffness: 200,
+                      damping: 15,
+                    },
+                  }}
+                />
+              )}
 
               {/* 短縮SHA */}
               <motion.text
