@@ -382,3 +382,205 @@ describe('calculateGitGraphLayout - (マージコミット対応)', () => {
     expect(mergeConnections).toHaveLength(2); // merge->base, merge->feature
   });
 });
+
+describe('calculateGitGraphLayout - (未マージブランチの枝分かれ表示)', () => {
+  // テスト用の共通設定
+  const testConfig = {
+    nodeSpacing: 80,
+    laneHeight: 60,
+    startX: 50,
+    startY: 200,
+    nodeRadius: 8,
+  };
+
+  it('マージ済みfeatureと未マージブランチが別レーンに配置される', () => {
+    // Arrange: 実際のgit-canvasリポジトリに近い構造
+    // base(分岐点) → feature(マージ済み) → merge
+    //            └→ unmerged(未マージ)
+    const commits: CanvasCommit[] = [
+      {
+        id: 'base',
+        shortId: 'base',
+        message: 'Base commit (branch point)',
+        fullMessage: 'Base commit (branch point)',
+        date: '2026-01-01T00:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: [],
+        branchNames: ['main'],
+        url: 'https://example.com',
+      },
+      {
+        id: 'feature1',
+        shortId: 'feature1',
+        message: 'Feature commit 1',
+        fullMessage: 'Feature commit 1',
+        date: '2026-01-01T01:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: ['base'],
+        branchNames: ['main'], // マージ済みなのでmainを含む
+        url: 'https://example.com',
+      },
+      {
+        id: 'merge',
+        shortId: 'merge',
+        message: 'Merge feature',
+        fullMessage: 'Merge feature',
+        date: '2026-01-01T02:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: ['base', 'feature1'],
+        branchNames: ['main'],
+        url: 'https://example.com',
+      },
+      {
+        id: 'unmerged1',
+        shortId: 'unmerged1',
+        message: 'Unmerged commit',
+        fullMessage: 'Unmerged commit',
+        date: '2026-01-01T01:30:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: ['base'],
+        branchNames: ['test-branch'], // 未マージなのでmainを含まない
+        url: 'https://example.com',
+      },
+    ];
+
+    // Act
+    const layout = calculateGitGraphLayout(commits, testConfig);
+
+    // Assert
+    const baseNode = layout.nodes.find((n) => n.id === 'base');
+    const feature1Node = layout.nodes.find((n) => n.id === 'feature1');
+    const mergeNode = layout.nodes.find((n) => n.id === 'merge');
+    const unmerged1Node = layout.nodes.find((n) => n.id === 'unmerged1');
+
+    // 分岐点とマージはlane 0
+    expect(baseNode?.lane).toBe(0);
+    expect(mergeNode?.lane).toBe(0);
+
+    // マージ済みfeatureはlane 1
+    expect(feature1Node?.lane).toBe(1);
+
+    // 未マージブランチはlane 2（マージ済みとは別レーン）
+    expect(unmerged1Node?.lane).toBe(2);
+  });
+
+  it('未マージブランチから派生したブランチはさらに別レーンに配置される', () => {
+    // Arrange: test-branch → test-branch-branch の構造
+    // base → unmerged1 → unmerged2 (test-branch)
+    //                  └→ sub1 (test-branch-branch)
+    const commits: CanvasCommit[] = [
+      {
+        id: 'base',
+        shortId: 'base',
+        message: 'Base',
+        fullMessage: 'Base',
+        date: '2026-01-01T00:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: [],
+        branchNames: ['main'],
+        url: 'https://example.com',
+      },
+      {
+        id: 'unmerged1',
+        shortId: 'unmerged1',
+        message: 'Unmerged 1',
+        fullMessage: 'Unmerged 1',
+        date: '2026-01-01T01:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: ['base'],
+        branchNames: ['test-branch', 'test-branch-branch'],
+        url: 'https://example.com',
+      },
+      {
+        id: 'unmerged2',
+        shortId: 'unmerged2',
+        message: 'Unmerged 2',
+        fullMessage: 'Unmerged 2',
+        date: '2026-01-01T02:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: ['unmerged1'],
+        branchNames: ['test-branch'],
+        url: 'https://example.com',
+      },
+      {
+        id: 'sub1',
+        shortId: 'sub1',
+        message: 'Sub branch commit',
+        fullMessage: 'Sub branch commit',
+        date: '2026-01-01T03:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: ['unmerged1'],
+        branchNames: ['test-branch-branch'],
+        url: 'https://example.com',
+      },
+    ];
+
+    // Act
+    const layout = calculateGitGraphLayout(commits, testConfig);
+
+    // Assert
+    const baseNode = layout.nodes.find((n) => n.id === 'base');
+    const unmerged1Node = layout.nodes.find((n) => n.id === 'unmerged1');
+    const unmerged2Node = layout.nodes.find((n) => n.id === 'unmerged2');
+    const sub1Node = layout.nodes.find((n) => n.id === 'sub1');
+
+    // baseはlane 0
+    expect(baseNode?.lane).toBe(0);
+
+    // unmerged1, unmerged2は同じレーン（test-branch）
+    expect(unmerged1Node?.lane).toBe(unmerged2Node?.lane);
+    expect(unmerged1Node?.lane).toBeGreaterThan(0);
+
+    // sub1はunmerged1, unmerged2とは別レーン（test-branch-branch）
+    expect(sub1Node?.lane).not.toBe(unmerged1Node?.lane);
+    expect(sub1Node?.lane).toBeGreaterThan(0);
+  });
+
+  it('branchNamesではなくグラフ構造でレーンを決定する', () => {
+    // Arrange: branchNamesにmainが含まれていてもfeatureパス上ならlane 1
+    // これは実際のGitHubの動作（マージ済みコミットはmainを含む）
+    const commits: CanvasCommit[] = [
+      {
+        id: 'base',
+        shortId: 'base',
+        message: 'Base',
+        fullMessage: 'Base',
+        date: '2026-01-01T00:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: [],
+        branchNames: ['main'],
+        url: 'https://example.com',
+      },
+      {
+        id: 'feature1',
+        shortId: 'feature1',
+        message: 'Feature 1',
+        fullMessage: 'Feature 1',
+        date: '2026-01-01T01:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: ['base'],
+        // GitHubではマージ済みfeatureもmainを含む！
+        branchNames: ['main', 'feature-branch'],
+        url: 'https://example.com',
+      },
+      {
+        id: 'merge',
+        shortId: 'merge',
+        message: 'Merge',
+        fullMessage: 'Merge',
+        date: '2026-01-01T02:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: ['base', 'feature1'],
+        branchNames: ['main'],
+        url: 'https://example.com',
+      },
+    ];
+
+    // Act
+    const layout = calculateGitGraphLayout(commits, testConfig);
+
+    // Assert: branchNamesにmainが含まれていても、グラフ構造でlane 1に配置
+    const feature1Node = layout.nodes.find((n) => n.id === 'feature1');
+    expect(feature1Node?.lane).toBe(1);
+  });
+});

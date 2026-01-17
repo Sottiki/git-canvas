@@ -192,8 +192,11 @@ function calculateMountainHeight(_commit: CanvasCommit, lane: number): number {
 /**
  * 各コミットにレーン番号を割り当て
  *
- * 1. マージ済み feature: 時系列で lane を再利用
- * 2. 未マージ feature: main に含まれないコミットを検出して新しい lane を割り当て
+ * アルゴリズム:
+ * 1. マージコミット → lane 0
+ * 2. マージ済み feature パス → findFeaturePaths で検出した lane
+ * 3. 未マージ feature → 親のレーンを継承 or 分岐なら新しい lane
+ * 4. main ブランチ → lane 0
  */
 function assignLanes(commits: CanvasCommit[]): Map<string, number> {
   const laneMap = new Map<string, number>();
@@ -204,33 +207,86 @@ function assignLanes(commits: CanvasCommit[]): Map<string, number> {
   // Step 2: マージ済み feature パスを検出
   const commitToLane = findFeaturePaths(commits, branchPoints);
 
-  // Step 3: レーン割り当て
+  // Step 3: 各分岐点から最初に分岐した子を記録（分岐の検出用）
+  const firstChildOfBranchPoint = new Map<string, string>();
+
+  // Step 4: 現在使用中の最大レーン番号を追跡
+  let maxLaneUsed = Math.max(0, ...commitToLane.values(), 0);
+
+  // Step 5: レーン割り当て（時系列順に処理）
   for (const commit of commits) {
-    // マージコミットは常に lane 0
+    // 5-1: マージコミットは常に lane 0
     const isMergeCommit = commit.parentIds.length >= 2;
     if (isMergeCommit) {
       laneMap.set(commit.id, 0);
       continue;
     }
 
-    // マージ済み feature パス上のコミット
+    // 5-2: マージ済み feature パス上のコミット
     if (commitToLane.has(commit.id)) {
       const lane = commitToLane.get(commit.id)!;
       laneMap.set(commit.id, lane);
       continue;
     }
 
-    // 未マージ feature: main ブランチに含まれない
+    // 5-3: 未マージ feature の処理
     const isNotInMain = !commit.branchNames.includes('main');
     if (isNotInMain) {
-      // 利用可能な最大の lane + 1 を割り当て
-      const maxLane = Math.max(0, ...commitToLane.values());
-      const newLane = maxLane + 1;
-      laneMap.set(commit.id, newLane);
+      const parentId = commit.parentIds[0];
+
+      // 親が分岐点かどうかチェック
+      if (parentId && branchPoints.has(parentId)) {
+        const parentLane = laneMap.get(parentId);
+
+        // 親が lane 0 (main) の場合
+        if (parentLane === 0 || parentLane === undefined) {
+          // この分岐点から最初に分岐した子かどうかチェック
+          const firstChild = firstChildOfBranchPoint.get(parentId);
+
+          if (firstChild === undefined) {
+            // 最初の子 → 新しいレーンを割り当て
+            maxLaneUsed++;
+            laneMap.set(commit.id, maxLaneUsed);
+            firstChildOfBranchPoint.set(parentId, commit.id);
+          } else {
+            // 2番目以降の子 → さらに新しいレーンを割り当て
+            maxLaneUsed++;
+            laneMap.set(commit.id, maxLaneUsed);
+          }
+        } else {
+          // 親が lane 1以上（feature ブランチ）の場合
+          const firstChild = firstChildOfBranchPoint.get(parentId);
+
+          if (firstChild === undefined) {
+            // 最初の子 → 親と同じレーンを継承（ブランチの継続）
+            laneMap.set(commit.id, parentLane);
+            firstChildOfBranchPoint.set(parentId, commit.id);
+          } else {
+            // 2番目以降の子 → 新しいレーンを割り当て（新しい分岐）
+            maxLaneUsed++;
+            laneMap.set(commit.id, maxLaneUsed);
+          }
+        }
+      } else if (parentId && laneMap.has(parentId)) {
+        const parentLane = laneMap.get(parentId)!;
+
+        // 親が lane 0 (main) の場合、自分は main に含まれてないので別レーンにする
+        if (parentLane === 0) {
+          maxLaneUsed++;
+          laneMap.set(commit.id, maxLaneUsed);
+        } else {
+          // 親が lane 1以上の場合 → 親と同じレーンを継承
+          laneMap.set(commit.id, parentLane);
+        }
+      } else {
+        // 親がまだ処理されていない or 親がいない → 新しいレーン
+        maxLaneUsed++;
+        laneMap.set(commit.id, maxLaneUsed);
+      }
       continue;
     }
 
-    // main ブランチのコミット → lane 0
+    // 5-4: main ブランチのコミット → lane 0
     laneMap.set(commit.id, 0);
   }
 
