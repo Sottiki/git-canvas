@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express, { type Express } from 'express';
 import session from 'express-session';
+import { authRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
 import { createRepositoryRouter } from './routes/repository.js';
 
@@ -45,6 +46,7 @@ export const createApp = (): Express => {
   app.use(express.urlencoded({ extended: true }));
 
   // ルーター設定
+  app.use('/api/auth', authRouter);
   app.use('/api/health', healthRouter);
   app.use('/api/repositories', createRepositoryRouter());
 

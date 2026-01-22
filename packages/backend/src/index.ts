@@ -1,8 +1,9 @@
 import dotenv from 'dotenv';
-import { createApp } from './app.js';
 
 // 環境変数の読み込み(.envファイル)
 dotenv.config();
+
+import { createApp } from './app.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = createApp();
