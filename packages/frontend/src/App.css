@@ -5,20 +5,27 @@
 }
 
 /* ヘッダー */
-.App h1 {
+.App-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-xl) var(--spacing-lg);
+  max-width: var(--max-width-container);
+  margin: 0 auto;
+}
+
+.App-header h1 {
   background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  font-size: 3rem;
+  font-size: 2rem;
   font-weight: 800;
-  text-align: center;
-  padding: var(--spacing-xl) 0 var(--spacing-sm) 0; /* 下のpaddingを小さく */
   margin: 0;
   letter-spacing: -0.02em;
 }
 
-/* サブタイトル追加 */
+/* サブタイトル */
 .App-subtitle {
   text-align: center;
   color: var(--color-text-secondary);
@@ -28,7 +35,7 @@
 }
 
 /* コンテナ */
-.App > div {
+.App > div:last-child {
   max-width: var(--max-width-container);
   margin: 0 auto;
   padding: 0 var(--spacing-lg);
@@ -36,9 +43,14 @@
 
 /* レスポンシブ */
 @media (max-width: 768px) {
-  .App h1 {
-    font-size: 2rem;
-    padding: var(--spacing-lg) 0 var(--spacing-xs) 0;
+  .App-header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+
+  .App-header h1 {
+    font-size: 1.5rem;
   }
 
   .App-subtitle {
@@ -46,7 +58,7 @@
     padding-bottom: var(--spacing-lg);
   }
 
-  .App > div {
+  .App > div:last-child {
     padding: 0 var(--spacing-md);
   }
 }
