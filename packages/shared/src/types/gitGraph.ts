@@ -37,6 +37,9 @@ export interface BranchLane {
   /** このレーンに属するコミットIDリスト */
   commitIds: string[];
 
+  /** このレーンの代表ブランチ名（左袖固定表示用） */
+  branchName?: string;
+
   /** レーンの色（オプショナル、未指定時はデフォルトグラデーション） */
   color?: string;
 }

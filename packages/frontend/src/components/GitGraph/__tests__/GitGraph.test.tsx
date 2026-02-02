@@ -1,4 +1,4 @@
-import type { CanvasCommit } from '@git-canvas/shared/types';
+import type { CanvasBranch, CanvasCommit } from '@git-canvas/shared/types';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { GitGraph } from '../GitGraph';
@@ -56,5 +56,80 @@ describe('GitGraph', () => {
 
     const svg = screen.getByRole('img', { name: 'Git commit graph' });
     expect(svg).toBeInTheDocument();
+  });
+
+  it('branchesを渡さなくてもエラーにならない（後方互換性）', () => {
+    // branches未指定でも動作する
+    render(<GitGraph commits={mockCommits} />);
+
+    const svg = screen.getByRole('img', { name: 'Git commit graph' });
+    expect(svg).toBeInTheDocument();
+  });
+
+  it('branchesを渡すとレーンラベルが表示される', () => {
+    const mockBranches: CanvasBranch[] = [
+      {
+        name: 'main',
+        latestCommitId: 'def456',
+        isProtected: true,
+      },
+    ];
+
+    render(<GitGraph commits={mockCommits} branches={mockBranches} />);
+
+    // 左袖にブランチ名が表示される
+    expect(screen.getByText('main')).toBeInTheDocument();
+  });
+
+  it('複数のブランチ名が表示される', () => {
+    const mockCommitsWithBranches: CanvasCommit[] = [
+      {
+        id: 'main1',
+        shortId: 'main1ab',
+        message: 'Main commit',
+        fullMessage: 'Main commit',
+        date: '2025-01-01T12:00:00Z',
+        author: {
+          name: 'Test User',
+          email: 'test@example.com',
+        },
+        parentIds: [],
+        branchNames: ['main'],
+        url: 'https://github.com/test/repo/commit/main1',
+      },
+      {
+        id: 'feature1',
+        shortId: 'feat1cd',
+        message: 'Feature commit',
+        fullMessage: 'Feature commit',
+        date: '2025-01-02T12:00:00Z',
+        author: {
+          name: 'Test User',
+          email: 'test@example.com',
+        },
+        parentIds: ['main1'],
+        branchNames: ['feature/test'],
+        url: 'https://github.com/test/repo/commit/feature1',
+      },
+    ];
+
+    const mockBranches: CanvasBranch[] = [
+      {
+        name: 'main',
+        latestCommitId: 'main1',
+        isProtected: true,
+      },
+      {
+        name: 'feature/test',
+        latestCommitId: 'feature1',
+        isProtected: false,
+      },
+    ];
+
+    render(<GitGraph commits={mockCommitsWithBranches} branches={mockBranches} />);
+
+    // 両方のブランチ名が表示される
+    expect(screen.getByText('main')).toBeInTheDocument();
+    expect(screen.getByText('feature/test')).toBeInTheDocument();
   });
 });

@@ -584,3 +584,184 @@ describe('calculateGitGraphLayout - (未マージブランチの枝分かれ表�
     expect(feature1Node?.lane).toBe(1);
   });
 });
+
+describe('calculateGitGraphLayout - (ブランチ名の割り当て)', () => {
+  // テスト用の共通設定
+  const testConfig = {
+    nodeSpacing: 80,
+    laneHeight: 60,
+    startX: 50,
+    startY: 200,
+    nodeRadius: 8,
+  };
+
+  it('Lane 0には"main"が割り当てられる', () => {
+    // Arrange
+    const commits: CanvasCommit[] = [
+      {
+        id: 'commit1',
+        shortId: 'commit1',
+        message: 'Main commit',
+        fullMessage: 'Main commit',
+        date: '2026-01-01T00:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: [],
+        branchNames: ['main'],
+        url: 'https://example.com',
+      },
+    ];
+
+    const branches = [
+      {
+        name: 'main',
+        latestCommitId: 'commit1',
+        isProtected: true,
+      },
+    ];
+
+    // Act
+    const layout = calculateGitGraphLayout(commits, branches, testConfig);
+
+    // Assert
+    const lane0 = layout.lanes.find((l) => l.laneNumber === 0);
+    expect(lane0?.branchName).toBe('main');
+  });
+
+  it('Lane 1以降は最新コミットのブランチ名が割り当てられる', () => {
+    // Arrange
+    const commits: CanvasCommit[] = [
+      {
+        id: 'main1',
+        shortId: 'main1',
+        message: 'Main',
+        fullMessage: 'Main',
+        date: '2026-01-01T00:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: [],
+        branchNames: ['main'],
+        url: 'https://example.com',
+      },
+      {
+        id: 'feature1',
+        shortId: 'feature1',
+        message: 'Feature',
+        fullMessage: 'Feature',
+        date: '2026-01-01T01:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: ['main1'],
+        branchNames: ['feature/oauth'],
+        url: 'https://example.com',
+      },
+    ];
+
+    const branches = [
+      {
+        name: 'main',
+        latestCommitId: 'main1',
+        isProtected: true,
+      },
+      {
+        name: 'feature/oauth',
+        latestCommitId: 'feature1',
+        isProtected: false,
+      },
+    ];
+
+    // Act
+    const layout = calculateGitGraphLayout(commits, branches, testConfig);
+
+    // Assert
+    const lane1 = layout.lanes.find((l) => l.laneNumber === 1);
+    expect(lane1?.branchName).toBe('feature/oauth');
+  });
+
+  it('複数ブランチが同じコミットを指す場合、mainを除外してアルファベット順で選択', () => {
+    // Arrange
+    const commits: CanvasCommit[] = [
+      {
+        id: 'commit1',
+        shortId: 'commit1',
+        message: 'Multi-branch commit',
+        fullMessage: 'Multi-branch commit',
+        date: '2026-01-01T00:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: [],
+        branchNames: ['main', 'feature/xyz', 'feature/abc'],
+        url: 'https://example.com',
+      },
+    ];
+
+    const branches = [
+      {
+        name: 'main',
+        latestCommitId: 'commit1',
+        isProtected: true,
+      },
+      {
+        name: 'feature/xyz',
+        latestCommitId: 'commit1',
+        isProtected: false,
+      },
+      {
+        name: 'feature/abc',
+        latestCommitId: 'commit1',
+        isProtected: false,
+      },
+    ];
+
+    // Act
+    const layout = calculateGitGraphLayout(commits, branches, testConfig);
+
+    // Assert: mainを除外し、アルファベット順で最初の"feature/abc"が選ばれる
+    const lane0 = layout.lanes.find((l) => l.laneNumber === 0);
+    expect(lane0?.branchName).toBe('main');
+  });
+
+  it('branches引数が空の場合でもエラーにならない', () => {
+    // Arrange
+    const commits: CanvasCommit[] = [
+      {
+        id: 'commit1',
+        shortId: 'commit1',
+        message: 'Commit',
+        fullMessage: 'Commit',
+        date: '2026-01-01T00:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: [],
+        branchNames: ['main'],
+        url: 'https://example.com',
+      },
+    ];
+
+    // Act
+    const layout = calculateGitGraphLayout(commits, [], testConfig);
+
+    // Assert: Lane 0にはmainが設定される
+    const lane0 = layout.lanes.find((l) => l.laneNumber === 0);
+    expect(lane0?.branchName).toBe('main');
+  });
+
+  it('branches引数を省略してもエラーにならない（後方互換性）', () => {
+    // Arrange
+    const commits: CanvasCommit[] = [
+      {
+        id: 'commit1',
+        shortId: 'commit1',
+        message: 'Commit',
+        fullMessage: 'Commit',
+        date: '2026-01-01T00:00:00Z',
+        author: { name: 'Test', email: 'test@example.com' },
+        parentIds: [],
+        branchNames: ['test-branch'],
+        url: 'https://example.com',
+      },
+    ];
+
+    // Act: branches引数を省略（既存のテストとの互換性）
+    const layout = calculateGitGraphLayout(commits, testConfig);
+
+    // Assert: エラーにならず、レイアウトが生成される
+    expect(layout.nodes).toHaveLength(1);
+    expect(layout.lanes).toHaveLength(1);
+  });
+});

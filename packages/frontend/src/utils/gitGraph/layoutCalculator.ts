@@ -8,6 +8,7 @@
 
 import type {
   BranchLane,
+  CanvasBranch,
   CanvasCommit,
   CommitConnection,
   CommitNode,
@@ -43,13 +44,57 @@ const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
  */
 export function calculateGitGraphLayout(
   commits: CanvasCommit[],
-  config: Partial<LayoutConfig> = {}
+  config?: Partial<LayoutConfig>
+): GitGraphLayout;
+
+/**
+ * コミット履歴からGitGraphのレイアウトを計算（ブランチ名表示対応）
+ *
+ * @param commits - コミットリスト（順不同でも可）
+ * @param branches - ブランチリスト（レーン名表示用）
+ * @param config - レイアウト設定（オプショナル）
+ * @returns レイアウト計算済みのGitGraphLayout
+ *
+ * @example
+ * ```typescript
+ * const commits: CanvasCommit[] = [...];
+ * const branches: CanvasBranch[] = [...];
+ * const layout = calculateGitGraphLayout(commits, branches);
+ * // layoutをGitGraphコンポーネントに渡す
+ * ```
+ */
+export function calculateGitGraphLayout(
+  commits: CanvasCommit[],
+  branches: CanvasBranch[],
+  config?: Partial<LayoutConfig>
+): GitGraphLayout;
+
+/**
+ * 実装本体
+ */
+export function calculateGitGraphLayout(
+  commits: CanvasCommit[],
+  branchesOrConfig?: CanvasBranch[] | Partial<LayoutConfig>,
+  config?: Partial<LayoutConfig>
 ): GitGraphLayout {
-  // 設定のマージ（デフォルト値 + ユーザー指定値）
-  const layoutConfig: LayoutConfig = {
-    ...DEFAULT_LAYOUT_CONFIG,
-    ...config,
-  };
+  // 引数の解釈：branchesOrConfigがCanvasBranch[]かPartial<LayoutConfig>かを判定
+  let branches: CanvasBranch[] = [];
+  let layoutConfig: LayoutConfig;
+
+  if (Array.isArray(branchesOrConfig)) {
+    // branchesOrConfigが配列 → CanvasBranch[]として扱う
+    branches = branchesOrConfig;
+    layoutConfig = {
+      ...DEFAULT_LAYOUT_CONFIG,
+      ...(config || {}),
+    };
+  } else {
+    // branchesOrConfigがオブジェクト → Partial<LayoutConfig>として扱う（後方互換性）
+    layoutConfig = {
+      ...DEFAULT_LAYOUT_CONFIG,
+      ...(branchesOrConfig || {}),
+    };
+  }
 
   // コミットが空の場合は空のレイアウトを返す
   if (commits.length === 0) {
@@ -76,13 +121,16 @@ export function calculateGitGraphLayout(
   // Step 5: ブランチレーン情報の生成
   const lanes = generateBranchLanes(nodes);
 
-  // Step 6: SVGビューボックスのサイズ計算
+  // Step 6: レーンに代表ブランチ名を割り当て
+  const lanesWithBranchNames = assignBranchNamesToLanes(lanes, nodes, branches);
+
+  // Step 7: SVGビューボックスのサイズ計算
   const viewBox = calculateViewBox(nodes, layoutConfig);
 
   return {
     nodes,
     connections,
-    lanes,
+    lanes: lanesWithBranchNames,
     viewBox,
   };
 }
@@ -383,6 +431,72 @@ function generateBranchLanes(nodes: CommitNode[]): BranchLane[] {
     laneNumber,
     commitIds,
   }));
+}
+
+/**
+ * レーンに代表ブランチ名を割り当てる
+ *
+ * アルゴリズム:
+ * - Lane 0 → "main" (固定)
+ * - Lane 1+ → そのレーンの最新コミット（時系列で一番新しい）が属するブランチから選択
+ *   - mainを除外
+ *   - 残りから1つ選ぶ（アルファベット順で最初）
+ *
+ * @param lanes - ブランチレーン情報（branchName未設定）
+ * @param nodes - コミットノード情報
+ * @param branches - ブランチ一覧
+ * @returns branchNameが設定されたブランチレーン情報
+ */
+function assignBranchNamesToLanes(
+  lanes: BranchLane[],
+  nodes: CommitNode[],
+  branches: CanvasBranch[]
+): BranchLane[] {
+  // コミットID → ノードのマップを作成
+  const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+
+  return lanes.map((lane) => {
+    // Lane 0 は固定で "main"
+    if (lane.laneNumber === 0) {
+      return {
+        ...lane,
+        branchName: 'main',
+      };
+    }
+
+    // Lane 1+ の場合、最新コミットを探す
+    // 時系列で一番新しいコミット = commitIds配列の最後（時系列ソート済みのため）
+    const latestCommitId = lane.commitIds[lane.commitIds.length - 1];
+    const latestNode = nodeMap.get(latestCommitId);
+
+    if (!latestNode) {
+      // ノードが見つからない場合（エッジケース）
+      return lane;
+    }
+
+    // 最新コミットが属するブランチ名から、mainを除外
+    const candidateBranches = latestNode.branchNames.filter((name) => name !== 'main');
+
+    // 候補がない場合
+    if (candidateBranches.length === 0) {
+      // branchesからこのレーンのコミットに一致するブランチを探す
+      const matchingBranch = branches.find((branch) =>
+        lane.commitIds.includes(branch.latestCommitId)
+      );
+      return {
+        ...lane,
+        branchName: matchingBranch?.name,
+      };
+    }
+
+    // アルファベット順でソートして最初のブランチを選択
+    const selectedBranch = candidateBranches.sort()[0];
+
+    return {
+      ...lane,
+      branchName: selectedBranch,
+    };
+  });
 }
 
 /**

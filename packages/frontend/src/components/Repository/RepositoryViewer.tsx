@@ -67,7 +67,7 @@ export const RepositoryViewer = ({ owner, repo }: RepositoryViewerProps) => {
       {/* Git グラフ */}
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Commit Graph</h3>
-        <GitGraph commits={repository.commits} />
+        <GitGraph commits={repository.commits} branches={repository.branches} />
       </section>
 
       {/* ブランチセクション */}

@@ -1,9 +1,46 @@
-.container {
+/* 外側のラッパー（左袖 + SVGエリア） */
+.wrapper {
+  position: relative;
   width: 100%;
+  display: flex;
   background: var(--color-bg-primary);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* 左袖固定エリア */
+.laneLabels {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  min-width: 150px;
+  max-width: 200px;
+  background: var(--color-bg-primary);
+  padding: var(--spacing-md) var(--spacing-sm);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* 各レーンのラベル */
+.laneLabel {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-family: "Fira Code", monospace;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+
+/* SVGコンテナエリア */
+.container {
+  flex: 1;
+  background: var(--color-bg-primary);
+  padding: var(--spacing-lg);
   overflow-x: auto;
   overflow-y: hidden;
 }

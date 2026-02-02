@@ -1,5 +1,5 @@
 import type { CanvasRepository } from '@git-canvas/shared/types';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as useRepositoryHook from '../../../hooks/useRepository';
 import { RepositoryViewer } from '../RepositoryViewer';
@@ -135,8 +135,9 @@ describe('RepositoryViewer', () => {
     // Assert - ブランチ数
     expect(screen.getByText('Branches')).toBeInTheDocument();
     expect(screen.getByText('(2)')).toBeInTheDocument();
-    expect(screen.getByText(/main/)).toBeInTheDocument();
-    expect(screen.getByText(/develop/)).toBeInTheDocument();
+    const branchesSection = screen.getByRole('heading', { name: /Branches/ }).closest('section');
+    expect(within(branchesSection!).getByText(/main/)).toBeInTheDocument();
+    expect(within(branchesSection!).getByText(/develop/)).toBeInTheDocument();
 
     // Assert - コミット数
     expect(screen.getByText('Branches')).toBeInTheDocument();
@@ -179,9 +180,10 @@ describe('RepositoryViewer', () => {
     // Act
     render(<RepositoryViewer owner="Sottiki" repo="git-canvas" />);
 
-    // Assert
-    expect(screen.getByText('main')).toBeInTheDocument();
-    expect(screen.getByText('🔒')).toBeInTheDocument();
+    // Assert - Branchesセクション内で検証
+    const branchesSection = screen.getByRole('heading', { name: /Branches/ }).closest('section');
+    expect(within(branchesSection!).getByText('main')).toBeInTheDocument();
+    expect(within(branchesSection!).getByText('🔒')).toBeInTheDocument();
   });
 
   it('Refresh ボタンをクリックすると refetch が呼ばれる', () => {
