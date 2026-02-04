@@ -7,9 +7,11 @@ import styles from './GitGraph.module.css';
 interface GitGraphProps {
   commits: CanvasCommit[];
   branches?: CanvasBranch[];
+  /** コミットノードがクリックされた時のコールバック */
+  onCommitClick?: (commit: CanvasCommit) => void;
 }
 
-export const GitGraph = ({ commits, branches = [] }: GitGraphProps) => {
+export const GitGraph = ({ commits, branches = [], onCommitClick }: GitGraphProps) => {
   const layout = calculateGitGraphLayout(commits, branches, {
     nodeSpacing: 80,
     laneHeight: 60,
@@ -39,6 +41,11 @@ export const GitGraph = ({ commits, branches = [] }: GitGraphProps) => {
   // viewBox: グラフを中央に配置
   const viewBoxY = 150;
   const viewBoxHeight = contentHeight - viewBoxY + 200;
+
+  // コミットノードクリック時のハンドラー
+  const handleCommitClick = (commit: CanvasCommit) => {
+    onCommitClick?.(commit);
+  };
 
   return (
     <div className={styles.wrapper}>
@@ -155,6 +162,9 @@ export const GitGraph = ({ commits, branches = [] }: GitGraphProps) => {
                     stroke="white"
                     strokeWidth={2.5}
                     className={styles.commitNode}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => handleCommitClick(node)}
+                    data-testid={`commit-node-${node.shortId}`}
                     {...{
                       initial: { scale: 0 },
                       animate: { scale: 1 },
@@ -181,6 +191,9 @@ export const GitGraph = ({ commits, branches = [] }: GitGraphProps) => {
                     stroke="white"
                     strokeWidth={2.5}
                     className={styles.commitNode}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => handleCommitClick(node)}
+                    data-testid={`commit-node-${node.shortId}`}
                     {...{
                       initial: { scale: 0 },
                       animate: { scale: 1 },

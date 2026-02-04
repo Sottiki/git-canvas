@@ -1,6 +1,6 @@
 import type { CanvasBranch, CanvasCommit } from '@git-canvas/shared/types';
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { GitGraph } from '../GitGraph';
 
 describe('GitGraph', () => {
@@ -131,5 +131,157 @@ describe('GitGraph', () => {
     // 両方のブランチ名が表示される
     expect(screen.getByText('main')).toBeInTheDocument();
     expect(screen.getByText('feature/test')).toBeInTheDocument();
+  });
+});
+
+describe('GitGraph - onCommitClick', () => {
+  const mockCommit: CanvasCommit = {
+    id: 'abc123full',
+    shortId: 'abc123d',
+    message: 'Test commit',
+    fullMessage: 'Test commit\n\nDetailed description here',
+    date: '2025-01-01T12:00:00Z',
+    author: {
+      name: 'Test User',
+      email: 'test@example.com',
+      avatarUrl: 'https://example.com/avatar.png',
+    },
+    parentIds: [],
+    branchNames: ['main'],
+    url: 'https://github.com/test/repo/commit/abc123full',
+  };
+
+  const mockCommits: CanvasCommit[] = [mockCommit];
+
+  it('onCommitClickを渡さなくてもエラーにならない（後方互換性）', () => {
+    // Arrange & Act
+    render(<GitGraph commits={mockCommits} />);
+
+    // Assert
+    const svg = screen.getByRole('img', { name: 'Git commit graph' });
+    expect(svg).toBeInTheDocument();
+  });
+
+  it('onCommitClickがundefinedでもクリック時にエラーにならない', () => {
+    // Arrange
+    render(<GitGraph commits={mockCommits} onCommitClick={undefined} />);
+
+    // Act - ノードをクリック
+    const node = screen.getByTestId('commit-node-abc123d');
+    fireEvent.click(node);
+
+    // Assert - エラーが発生しないことを確認
+    const svg = screen.getByRole('img', { name: 'Git commit graph' });
+    expect(svg).toBeInTheDocument();
+  });
+
+  it('コミットノードをクリックするとonCommitClickが呼ばれる', () => {
+    // Arrange
+    const handleCommitClick = vi.fn();
+    render(<GitGraph commits={mockCommits} onCommitClick={handleCommitClick} />);
+
+    // Act
+    const node = screen.getByTestId('commit-node-abc123d');
+    fireEvent.click(node);
+
+    // Assert
+    expect(handleCommitClick).toHaveBeenCalledTimes(1);
+    expect(handleCommitClick).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'abc123full',
+        shortId: 'abc123d',
+        message: 'Test commit',
+      })
+    );
+  });
+
+  it('マージコミットノードをクリックするとonCommitClickが呼ばれる', () => {
+    // Arrange - マージコミット（2つ以上の親を持つ）
+    const mergeCommit: CanvasCommit = {
+      id: 'merge123',
+      shortId: 'merge12',
+      message: 'Merge branch feature into main',
+      fullMessage: 'Merge branch feature into main',
+      date: '2025-01-03T12:00:00Z',
+      author: {
+        name: 'Test User',
+        email: 'test@example.com',
+      },
+      parentIds: ['abc123', 'def456'], // 2つの親 = マージコミット
+      branchNames: ['main'],
+      url: 'https://github.com/test/repo/commit/merge123',
+    };
+
+    const commitsWithMerge: CanvasCommit[] = [
+      mockCommit,
+      {
+        id: 'def456',
+        shortId: 'def456e',
+        message: 'Feature commit',
+        fullMessage: 'Feature commit',
+        date: '2025-01-02T12:00:00Z',
+        author: { name: 'Test User', email: 'test@example.com' },
+        parentIds: ['abc123full'],
+        branchNames: ['feature'],
+        url: 'https://github.com/test/repo/commit/def456',
+      },
+      mergeCommit,
+    ];
+
+    const handleCommitClick = vi.fn();
+    render(<GitGraph commits={commitsWithMerge} onCommitClick={handleCommitClick} />);
+
+    // Act - マージノードをクリック
+    const mergeNode = screen.getByTestId('commit-node-merge12');
+    fireEvent.click(mergeNode);
+
+    // Assert
+    expect(handleCommitClick).toHaveBeenCalledTimes(1);
+    expect(handleCommitClick).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'merge123',
+        shortId: 'merge12',
+        parentIds: ['abc123', 'def456'],
+      })
+    );
+  });
+
+  it('複数のコミットノードをそれぞれクリックできる', () => {
+    // Arrange
+    const twoCommits: CanvasCommit[] = [
+      mockCommit,
+      {
+        id: 'second456',
+        shortId: 'second4',
+        message: 'Second commit',
+        fullMessage: 'Second commit',
+        date: '2025-01-02T12:00:00Z',
+        author: { name: 'Test User', email: 'test@example.com' },
+        parentIds: ['abc123full'],
+        branchNames: ['main'],
+        url: 'https://github.com/test/repo/commit/second456',
+      },
+    ];
+
+    const handleCommitClick = vi.fn();
+    render(<GitGraph commits={twoCommits} onCommitClick={handleCommitClick} />);
+
+    // Act - 両方のノードをクリック
+    const firstNode = screen.getByTestId('commit-node-abc123d');
+    const secondNode = screen.getByTestId('commit-node-second4');
+
+    fireEvent.click(firstNode);
+    fireEvent.click(secondNode);
+
+    // Assert
+    expect(handleCommitClick).toHaveBeenCalledTimes(2);
+    expect(handleCommitClick).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ shortId: 'abc123d' })
+    );
+    expect(handleCommitClick).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ shortId: 'second4' })
+    );
   });
 });
