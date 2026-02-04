@@ -63,3 +63,56 @@ export interface GitHubBranch {
   };
   protected: boolean;
 }
+
+/**
+ * コミットで変更されたファイルの情報（GitHub API レスポンス）
+ * GET /repos/{owner}/{repo}/commits/{ref} のレスポンスに含まれる
+ */
+export interface GitHubCommitFile {
+  /** ファイル名（パス付き） */
+  filename: string;
+
+  /** ファイルの変更ステータス */
+  status: 'added' | 'removed' | 'modified' | 'renamed' | 'copied' | 'changed' | 'unchanged';
+
+  /** 追加行数 */
+  additions: number;
+
+  /** 削除行数 */
+  deletions: number;
+
+  /** 変更行数 */
+  changes: number;
+
+  /** パッチ内容（diff） */
+  patch?: string;
+
+  /** リネーム前のファイル名 */
+  previous_filename?: string;
+}
+
+/**
+ * コミット統計情報（GitHub API レスポンス）
+ */
+export interface GitHubCommitStats {
+  /** 総変更行数 */
+  total: number;
+
+  /** 追加行数 */
+  additions: number;
+
+  /** 削除行数 */
+  deletions: number;
+}
+
+/**
+ * 単一コミットの詳細情報（ファイル情報付き）
+ * GET /repos/{owner}/{repo}/commits/{ref} のレスポンス
+ */
+export interface GitHubCommitWithFiles extends GitHubCommit {
+  /** 変更ファイル一覧 */
+  files: GitHubCommitFile[];
+
+  /** 変更統計 */
+  stats: GitHubCommitStats;
+}

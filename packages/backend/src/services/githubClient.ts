@@ -1,4 +1,4 @@
-import type { GitHubBranch, GitHubCommit } from '@git-canvas/shared/types';
+import type { GitHubBranch, GitHubCommit, GitHubCommitWithFiles } from '@git-canvas/shared/types';
 
 /**
  * GitHub REST API クライアント
@@ -51,6 +51,28 @@ export class GitHubClient {
     const url = `${this.baseUrl}/repos/${owner}/${repo}/branches`;
 
     const response = await this.request<GitHubBranch[]>(url);
+    return response;
+  }
+
+  /**
+   * 単一コミットの詳細情報を取得（ファイル変更情報を含む）
+   *
+   * GitHub API: GET /repos/{owner}/{repo}/commits/{ref}
+   * 公式ドキュメント: https://docs.github.com/en/rest/commits/commits#get-a-commit
+   *
+   * @param owner - リポジトリオーナー
+   * @param repo - リポジトリ名
+   * @param sha - コミットSHA
+   * @returns ファイル変更情報を含むコミット詳細
+   */
+  async fetchCommitDetail(
+    owner: string,
+    repo: string,
+    sha: string
+  ): Promise<GitHubCommitWithFiles> {
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/commits/${encodeURIComponent(sha)}`;
+
+    const response = await this.request<GitHubCommitWithFiles>(url);
     return response;
   }
 

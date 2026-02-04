@@ -2,8 +2,11 @@ import type {
   CanvasAuthor,
   CanvasBranch,
   CanvasCommit,
+  CommitDetail,
+  CommitFile,
   GitHubBranch,
   GitHubCommit,
+  GitHubCommitWithFiles,
 } from '@git-canvas/shared/types';
 
 /**
@@ -62,5 +65,35 @@ export function convertToCanvasBranch(githubBranch: GitHubBranch): CanvasBranch 
     latestCommitId: githubBranch.commit.sha,
     isProtected: githubBranch.protected,
     // color は UI側で自動生成するため、ここでは undefined
+  };
+}
+
+/**
+ * GitHubCommitWithFiles を CommitDetail に変換
+ *
+ * @param githubCommit - GitHub API から取得したファイル情報付きコミット
+ * @returns UIレンダリング用に最適化されたコミット詳細情報
+ */
+export function convertToCommitDetail(githubCommit: GitHubCommitWithFiles): CommitDetail {
+  const { sha, files, stats } = githubCommit;
+
+  // ファイル情報を変換
+  const commitFiles: CommitFile[] = files.map((file) => ({
+    filename: file.filename,
+    status: file.status,
+    additions: file.additions,
+    deletions: file.deletions,
+    changes: file.changes,
+    previousFilename: file.previous_filename,
+  }));
+
+  return {
+    sha,
+    files: commitFiles,
+    stats: {
+      total: stats.total,
+      additions: stats.additions,
+      deletions: stats.deletions,
+    },
   };
 }

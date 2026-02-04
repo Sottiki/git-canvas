@@ -2,10 +2,15 @@ import type {
   CanvasBranch,
   CanvasCommit,
   CanvasRepository,
+  CommitDetail,
   GitHubCommit,
 } from '@git-canvas/shared';
 import { GitHubClient } from './githubClient';
-import { convertToCanvasBranch, convertToCanvasCommit } from './githubConverter';
+import {
+  convertToCanvasBranch,
+  convertToCanvasCommit,
+  convertToCommitDetail,
+} from './githubConverter';
 
 /**
  * GitHub Service Module
@@ -159,5 +164,23 @@ export class GitHubService {
       commits,
       branches,
     };
+  }
+
+  /**
+   * 単一コミットの詳細情報を取得（ファイル変更情報を含む）
+   *
+   * @param owner - リポジトリオーナー
+   * @param repo - リポジトリ名
+   * @param sha - コミットSHA
+   * @returns ファイル変更情報を含むコミット詳細
+   */
+  public async getCommitDetail(owner: string, repo: string, sha: string): Promise<CommitDetail> {
+    // GitHub API からコミット詳細を取得
+    const githubCommit = await this.client.fetchCommitDetail(owner, repo, sha);
+
+    // Canvas型に変換
+    const commitDetail = convertToCommitDetail(githubCommit);
+
+    return commitDetail;
   }
 }
