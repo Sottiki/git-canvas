@@ -1,4 +1,7 @@
+import type { CanvasCommit } from '@git-canvas/shared/types';
+import { useState } from 'react';
 import { useRepository } from '../../hooks/useRepository';
+import { CommitDetailModal } from '../CommitDetailModal/CommitDetailModal';
 import { GitGraph } from '../GitGraph/GitGraph';
 import styles from './RepositoryViewer.module.css';
 
@@ -15,6 +18,19 @@ interface RepositoryViewerProps {
  */
 export const RepositoryViewer = ({ owner, repo }: RepositoryViewerProps) => {
   const { repository, loading, error, refetch } = useRepository(owner, repo);
+
+  // コミット詳細モーダル用の状態
+  const [selectedCommit, setSelectedCommit] = useState<CanvasCommit | null>(null);
+
+  // コミットノードがクリックされた時のハンドラ
+  const handleCommitClick = (commit: CanvasCommit) => {
+    setSelectedCommit(commit);
+  };
+
+  // モーダルを閉じる時のハンドラ
+  const handleCloseModal = () => {
+    setSelectedCommit(null);
+  };
 
   if (loading) {
     return (
@@ -67,7 +83,11 @@ export const RepositoryViewer = ({ owner, repo }: RepositoryViewerProps) => {
       {/* Git グラフ */}
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Commit Graph</h3>
-        <GitGraph commits={repository.commits} branches={repository.branches} />
+        <GitGraph
+          commits={repository.commits}
+          branches={repository.branches}
+          onCommitClick={handleCommitClick}
+        />
       </section>
 
       {/* ブランチセクション */}
@@ -116,6 +136,16 @@ export const RepositoryViewer = ({ owner, repo }: RepositoryViewerProps) => {
           ))}
         </div>
       </section>
+
+      {/* コミット詳細モーダル */}
+      {selectedCommit && (
+        <CommitDetailModal
+          commit={selectedCommit}
+          owner={owner}
+          repo={repo}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   );
 };
