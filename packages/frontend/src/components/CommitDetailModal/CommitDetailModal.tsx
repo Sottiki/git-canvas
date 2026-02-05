@@ -1,11 +1,16 @@
 import type { CanvasCommit } from '@git-canvas/shared/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect } from 'react';
+import { useCommitDetail } from '../../hooks/useCommitDetail';
 import styles from './CommitDetailModal.module.css';
 
 interface CommitDetailModalProps {
   /** 表示するコミット情報 */
   commit: CanvasCommit;
+  /** リポジトリオーナー */
+  owner: string;
+  /** リポジトリ名 */
+  repo: string;
   /** モーダルを閉じる時のコールバック */
   onClose: () => void;
 }
@@ -14,12 +19,14 @@ interface CommitDetailModalProps {
  * コミット詳細を表示するモーダルコンポーネント
  *
  * 責務（SRP）:
- * - コミットの基本情報を表示する
+ * - コミットの基本情報を即座に表示
+ * - ファイル情報をAPIから取得して遅延表示
  * - ESCキーや背景クリックで閉じる
- *
- * ファイル情報の取得・表示は別コンポーネントに委譲（Step 5で実装）
  */
-export const CommitDetailModal = ({ commit, onClose }: CommitDetailModalProps) => {
+export const CommitDetailModal = ({ commit, owner, repo, onClose }: CommitDetailModalProps) => {
+  // ファイル情報を取得
+  const { data: commitDetail, isLoading, error } = useCommitDetail(owner, repo, commit.id);
+
   // ESCキーでモーダルを閉じる
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -54,6 +61,40 @@ export const CommitDetailModal = ({ commit, onClose }: CommitDetailModalProps) =
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  // ファイルステータスに応じたスタイルクラスを取得
+  const getStatusClass = (status: string): string => {
+    switch (status) {
+      case 'added':
+        return styles.statusAdded;
+      case 'removed':
+        return styles.statusRemoved;
+      case 'modified':
+        return styles.statusModified;
+      case 'renamed':
+        return styles.statusRenamed;
+      default:
+        return styles.statusDefault;
+    }
+  };
+
+  // ファイルステータスの表示名を取得
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'added':
+        return '追加';
+      case 'removed':
+        return '削除';
+      case 'modified':
+        return '変更';
+      case 'renamed':
+        return '名前変更';
+      case 'copied':
+        return 'コピー';
+      default:
+        return status;
+    }
   };
 
   // マージコミット判定
@@ -173,12 +214,63 @@ export const CommitDetailModal = ({ commit, onClose }: CommitDetailModalProps) =
               </div>
             )}
 
-            {/* ファイル情報プレースホルダー（Step 5で実装） */}
+            {/* ファイル情報 */}
             <div className={styles.section}>
-              <span className={styles.sectionLabel}>変更ファイル</span>
-              <div className={styles.filesPlaceholder} data-testid="files-placeholder">
-                ファイル情報は読み込み中...
-              </div>
+              <span className={styles.sectionLabel}>
+                変更ファイル
+                {commitDetail && ` (${commitDetail.files.length})`}
+              </span>
+
+              {/* ローディング状態 */}
+              {isLoading && (
+                <div className={styles.filesLoading} data-testid="files-loading">
+                  <div className={styles.spinner} />
+                  <span>ファイル情報を取得中...</span>
+                </div>
+              )}
+
+              {/* エラー状態 */}
+              {error && (
+                <div className={styles.filesError} data-testid="files-error">
+                  <span>ファイル情報の取得に失敗しました</span>
+                  <span className={styles.errorDetail}>{error.message}</span>
+                </div>
+              )}
+
+              {/* ファイル一覧 */}
+              {commitDetail && !isLoading && !error && (
+                <>
+                  {/* 統計サマリー */}
+                  <div className={styles.statsSummary} data-testid="files-stats">
+                    <span className={styles.statsAdditions}>+{commitDetail.stats.additions}</span>
+                    <span className={styles.statsDeletions}>-{commitDetail.stats.deletions}</span>
+                    <span className={styles.statsTotal}>({commitDetail.stats.total} 行変更)</span>
+                  </div>
+
+                  {/* ファイルリスト */}
+                  <ul className={styles.fileList} data-testid="files-list">
+                    {commitDetail.files.map((file) => (
+                      <li key={file.filename} className={styles.fileItem}>
+                        <span className={`${styles.fileStatus} ${getStatusClass(file.status)}`}>
+                          {getStatusLabel(file.status)}
+                        </span>
+                        <span className={styles.fileName}>
+                          {file.previousFilename && (
+                            <span className={styles.previousFileName}>
+                              {file.previousFilename} →{' '}
+                            </span>
+                          )}
+                          {file.filename}
+                        </span>
+                        <span className={styles.fileChanges}>
+                          <span className={styles.fileAdditions}>+{file.additions}</span>
+                          <span className={styles.fileDeletions}>-{file.deletions}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           </div>
 
