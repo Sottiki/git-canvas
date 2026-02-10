@@ -1,6 +1,6 @@
 import type { CommitDetail } from '@git-canvas/shared/types';
 import { renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCommitDetail } from '../useCommitDetail';
 
 describe('useCommitDetail', () => {
