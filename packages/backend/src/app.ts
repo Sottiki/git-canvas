@@ -6,6 +6,24 @@ import { healthRouter } from './routes/health.js';
 import { createRepositoryRouter } from './routes/repository.js';
 
 /**
+ * 許可するオリジンのリストを取得
+ * - 本番環境（NODE_ENV=production）: FRONTEND_URL のみ
+ * - 開発環境: Vite dev server (5173) と preview server (4173) の両方を許可
+ */
+const getAllowedOrigins = (): string[] => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const envOrigin = process.env.FRONTEND_URL;
+
+  if (isProduction && envOrigin) {
+    // 本番環境: 環境変数で指定されたオリジンのみ
+    return [envOrigin];
+  }
+
+  // 開発環境: 両方のポートを許可（.env の FRONTEND_URL は無視）
+  return ['http://localhost:5173', 'http://localhost:4173'];
+};
+
+/**
  * Expressアプリケーションの作成と設定
  * - ミドルウェアの設定
  * - ルーターの登録
@@ -19,7 +37,7 @@ export const createApp = (): Express => {
   // CORS設定: フロントエンドからのリクエストを許可
   app.use(
     cors({
-      origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+      origin: getAllowedOrigins(),
       credentials: true, // Cookie送信を許可
     })
   );

@@ -1,4 +1,9 @@
-import type { CanvasBranch, CanvasCommit, CanvasRepository } from '@git-canvas/shared/types';
+import type {
+  CanvasBranch,
+  CanvasCommit,
+  CanvasRepository,
+  CommitDetail,
+} from '@git-canvas/shared/types';
 import cors from 'cors';
 import express, { type Express } from 'express';
 import request from 'supertest';
@@ -12,6 +17,7 @@ describe('Repository Routes', () => {
     getCommits: ReturnType<typeof vi.fn>;
     getBranches: ReturnType<typeof vi.fn>;
     getRepository: ReturnType<typeof vi.fn>;
+    getCommitDetail: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -20,6 +26,7 @@ describe('Repository Routes', () => {
       getCommits: vi.fn(),
       getBranches: vi.fn(),
       getRepository: vi.fn(),
+      getCommitDetail: vi.fn(),
     };
 
     // モックサービスを注入してルーターを作成
@@ -105,6 +112,115 @@ describe('Repository Routes', () => {
         message: 'GitHub API Error',
         statusCode: 500,
       });
+    });
+  });
+
+  describe('GET /api/repositories/:owner/:repo/commits/:sha', () => {
+    it('コミット詳細を正常に取得できる', async () => {
+      const mockCommitDetail: CommitDetail = {
+        sha: 'abc123def456789012345678901234567890abcd',
+        files: [
+          {
+            filename: 'src/index.ts',
+            status: 'modified',
+            additions: 10,
+            deletions: 5,
+            changes: 15,
+          },
+          {
+            filename: 'README.md',
+            status: 'added',
+            additions: 20,
+            deletions: 0,
+            changes: 20,
+          },
+        ],
+        stats: {
+          total: 35,
+          additions: 30,
+          deletions: 5,
+        },
+      };
+
+      mockGitHubService.getCommitDetail.mockResolvedValueOnce(mockCommitDetail);
+
+      const response = await request(app).get(
+        '/api/repositories/Sottiki/git-canvas/commits/abc123def456'
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockCommitDetail);
+      expect(mockGitHubService.getCommitDetail).toHaveBeenCalledWith(
+        'Sottiki',
+        'git-canvas',
+        'abc123def456'
+      );
+    });
+
+    it('リネームされたファイルを含むコミット詳細を取得できる', async () => {
+      const mockCommitDetail: CommitDetail = {
+        sha: 'rename123',
+        files: [
+          {
+            filename: 'new-name.ts',
+            status: 'renamed',
+            additions: 0,
+            deletions: 0,
+            changes: 0,
+            previousFilename: 'old-name.ts',
+          },
+        ],
+        stats: {
+          total: 0,
+          additions: 0,
+          deletions: 0,
+        },
+      };
+
+      mockGitHubService.getCommitDetail.mockResolvedValueOnce(mockCommitDetail);
+
+      const response = await request(app).get(
+        '/api/repositories/Sottiki/git-canvas/commits/rename123'
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.files[0].previousFilename).toBe('old-name.ts');
+    });
+
+    it('エラー時に500を返す', async () => {
+      mockGitHubService.getCommitDetail.mockRejectedValueOnce(new Error('Commit not found'));
+
+      const response = await request(app).get(
+        '/api/repositories/Sottiki/git-canvas/commits/invalid123'
+      );
+
+      expect(response.status).toBe(500);
+      expect(response.body).toEqual({
+        error: 'Failed to fetch commit detail',
+        message: 'Commit not found',
+        statusCode: 500,
+      });
+    });
+
+    it('URLエンコードされたSHAを正しく処理する', async () => {
+      const mockCommitDetail: CommitDetail = {
+        sha: 'special%sha',
+        files: [],
+        stats: { total: 0, additions: 0, deletions: 0 },
+      };
+
+      mockGitHubService.getCommitDetail.mockResolvedValueOnce(mockCommitDetail);
+
+      const response = await request(app).get(
+        '/api/repositories/Sottiki/git-canvas/commits/special%25sha'
+      );
+
+      expect(response.status).toBe(200);
+      expect(mockGitHubService.getCommitDetail).toHaveBeenCalledWith(
+        'Sottiki',
+        'git-canvas',
+        'special%sha'
+      );
     });
   });
 

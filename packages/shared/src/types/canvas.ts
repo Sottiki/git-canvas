@@ -78,3 +78,55 @@ export interface CanvasRepository {
   /** ブランチリスト */
   branches: CanvasBranch[];
 }
+
+/**
+ * コミットで変更されたファイルの情報
+ */
+export interface CommitFile {
+  /** ファイル名（パス付き） */
+  filename: string;
+
+  /** ファイルの変更ステータス */
+  status: 'added' | 'removed' | 'modified' | 'renamed' | 'copied' | 'changed' | 'unchanged';
+
+  /** 追加行数 */
+  additions: number;
+
+  /** 削除行数 */
+  deletions: number;
+
+  /** 変更行数（additions + deletions） */
+  changes: number;
+
+  /** リネーム前のファイル名（status が renamed の場合のみ） */
+  previousFilename?: string;
+}
+
+/**
+ * コミットの変更統計情報
+ */
+export interface CommitStats {
+  /** 総変更行数 */
+  total: number;
+
+  /** 追加行数 */
+  additions: number;
+
+  /** 削除行数 */
+  deletions: number;
+}
+
+/**
+ * コミット詳細情報（ファイル変更情報を含む）
+ * モーダル表示用に最適化
+ */
+export interface CommitDetail {
+  /** コミットSHA */
+  sha: string;
+
+  /** 変更ファイル一覧 */
+  files: CommitFile[];
+
+  /** 変更統計 */
+  stats: CommitStats;
+}

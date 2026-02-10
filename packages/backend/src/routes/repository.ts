@@ -2,6 +2,7 @@ import type {
   CanvasBranch,
   CanvasCommit,
   CanvasRepository,
+  CommitDetail,
   ErrorResponse,
 } from '@git-canvas/shared/types';
 import type { Request, Response } from 'express';
@@ -109,13 +110,43 @@ export const createRepositoryRouter = (githubService?: GitHubService): Router =>
   };
 
   /**
+   * コミット詳細取得ハンドラ
+   * - 単一コミットのファイル変更情報を含む詳細を取得
+   *
+   * @param req - リクエストオブジェクト
+   * @param res - レスポンスオブジェクト
+   * @returns void
+   */
+  const getCommitDetail = async (
+    req: Request,
+    res: Response<CommitDetail | ErrorResponse>
+  ): Promise<void> => {
+    try {
+      const { owner, repo, sha } = req.params;
+
+      const commitDetail = await service.getCommitDetail(owner, repo, sha);
+
+      res.json(commitDetail);
+    } catch (error) {
+      console.error('Failed to fetch commit detail:', error);
+      res.status(500).json({
+        error: 'Failed to fetch commit detail',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        statusCode: 500,
+      });
+    }
+  };
+
+  /**
    * ルーター設定
    *
    * エンドポイント:
    * - GET /api/repositories/:owner/:repo/commits - コミット一覧
+   * - GET /api/repositories/:owner/:repo/commits/:sha - コミット詳細（ファイル情報付き）
    * - GET /api/repositories/:owner/:repo/branches - ブランチ一覧
    * - GET /api/repositories/:owner/:repo - リポジトリ全体
    */
+  router.get('/:owner/:repo/commits/:sha', getCommitDetail);
   router.get('/:owner/:repo/commits', getCommits);
   router.get('/:owner/:repo/branches', getBranches);
   router.get('/:owner/:repo', getRepository);
