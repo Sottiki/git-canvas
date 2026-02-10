@@ -1,4 +1,4 @@
-import type { GitHubBranch, GitHubCommit } from '@git-canvas/shared/types';
+import type { GitHubBranch, GitHubCommit, GitHubCommitWithFiles } from '@git-canvas/shared/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GitHubClient } from '../../services/githubClient';
 import { GitHubService } from '../../services/githubService';
@@ -12,6 +12,7 @@ describe('GitHubService', () => {
     mockClient = {
       fetchCommits: vi.fn(),
       fetchBranches: vi.fn(),
+      fetchCommitDetail: vi.fn(),
     } as unknown as GitHubClient;
 
     // モッククライアントを注入してサービスを作成
@@ -253,6 +254,156 @@ describe('GitHubService', () => {
       // Assert: 両方が呼ばれたことを確認
       expect(mockClient.fetchCommits).toHaveBeenCalledTimes(1);
       expect(mockClient.fetchBranches).toHaveBeenCalledTimes(2); // 2回呼ばれる
+    });
+  });
+
+  describe('getCommitDetail', () => {
+    it('GitHub APIからコミット詳細を取得し、CommitDetail型に変換して返す', async () => {
+      // Arrange: モックデータ準備
+      const mockGitHubCommitWithFiles: GitHubCommitWithFiles = {
+        sha: 'abc123def456789012345678901234567890abcd',
+        commit: {
+          author: {
+            name: 'Test User',
+            email: 'test@example.com',
+            date: '2025-01-01T12:00:00Z',
+          },
+          committer: {
+            name: 'Test User',
+            email: 'test@example.com',
+            date: '2025-01-01T12:00:00Z',
+          },
+          message: 'Test commit',
+          tree: { sha: 'tree123' },
+          comment_count: 0,
+        },
+        author: null,
+        committer: null,
+        parents: [],
+        html_url: 'https://github.com/owner/repo/commit/abc123',
+        files: [
+          {
+            filename: 'src/index.ts',
+            status: 'modified',
+            additions: 10,
+            deletions: 5,
+            changes: 15,
+          },
+          {
+            filename: 'README.md',
+            status: 'added',
+            additions: 20,
+            deletions: 0,
+            changes: 20,
+          },
+        ],
+        stats: {
+          total: 35,
+          additions: 30,
+          deletions: 5,
+        },
+      };
+
+      (mockClient.fetchCommitDetail as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+        mockGitHubCommitWithFiles
+      );
+
+      // Act: コミット詳細取得
+      const result = await service.getCommitDetail('owner', 'repo', 'abc123def456');
+
+      // Assert: CommitDetail型に変換されていること
+      expect(result).toEqual({
+        sha: 'abc123def456789012345678901234567890abcd',
+        files: [
+          {
+            filename: 'src/index.ts',
+            status: 'modified',
+            additions: 10,
+            deletions: 5,
+            changes: 15,
+            previousFilename: undefined,
+          },
+          {
+            filename: 'README.md',
+            status: 'added',
+            additions: 20,
+            deletions: 0,
+            changes: 20,
+            previousFilename: undefined,
+          },
+        ],
+        stats: {
+          total: 35,
+          additions: 30,
+          deletions: 5,
+        },
+      });
+
+      // クライアントが正しく呼ばれたか確認
+      expect(mockClient.fetchCommitDetail).toHaveBeenCalledWith('owner', 'repo', 'abc123def456');
+    });
+
+    it('リネームされたファイルを含むコミット詳細を正しく変換する', async () => {
+      // Arrange
+      const mockGitHubCommitWithFiles: GitHubCommitWithFiles = {
+        sha: 'rename123',
+        commit: {
+          author: {
+            name: 'Test User',
+            email: 'test@example.com',
+            date: '2025-01-01T12:00:00Z',
+          },
+          committer: {
+            name: 'Test User',
+            email: 'test@example.com',
+            date: '2025-01-01T12:00:00Z',
+          },
+          message: 'Rename file',
+          tree: { sha: 'tree123' },
+          comment_count: 0,
+        },
+        author: null,
+        committer: null,
+        parents: [],
+        html_url: 'https://github.com/owner/repo/commit/rename123',
+        files: [
+          {
+            filename: 'new-name.ts',
+            status: 'renamed',
+            additions: 0,
+            deletions: 0,
+            changes: 0,
+            previous_filename: 'old-name.ts',
+          },
+        ],
+        stats: {
+          total: 0,
+          additions: 0,
+          deletions: 0,
+        },
+      };
+
+      (mockClient.fetchCommitDetail as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+        mockGitHubCommitWithFiles
+      );
+
+      // Act
+      const result = await service.getCommitDetail('owner', 'repo', 'rename123');
+
+      // Assert
+      expect(result.files[0].previousFilename).toBe('old-name.ts');
+    });
+
+    it('エラー発生時は例外をスローする', async () => {
+      // Arrange
+      (mockClient.fetchCommitDetail as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('GitHub API Error')
+      );
+
+      // Act & Assert
+      await expect(service.getCommitDetail('owner', 'repo', 'invalid')).rejects.toThrow(
+        'GitHub API Error'
+      );
     });
   });
 });
