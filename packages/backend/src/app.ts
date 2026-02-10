@@ -7,18 +7,19 @@ import { createRepositoryRouter } from './routes/repository.js';
 
 /**
  * 許可するオリジンのリストを取得
- * 環境変数 FRONTEND_URL が設定されている場合はそれを使用
- * 設定されていない場合は開発用のデフォルト値を使用
+ * - 本番環境（NODE_ENV=production）: FRONTEND_URL のみ
+ * - 開発環境: Vite dev server (5173) と preview server (4173) の両方を許可
  */
 const getAllowedOrigins = (): string[] => {
+  const isProduction = process.env.NODE_ENV === 'production';
   const envOrigin = process.env.FRONTEND_URL;
 
-  if (envOrigin) {
+  if (isProduction && envOrigin) {
     // 本番環境: 環境変数で指定されたオリジンのみ
     return [envOrigin];
   }
 
-  // 開発環境: Vite dev server と preview server の両方を許可
+  // 開発環境: 両方のポートを許可（.env の FRONTEND_URL は無視）
   return ['http://localhost:5173', 'http://localhost:4173'];
 };
 
